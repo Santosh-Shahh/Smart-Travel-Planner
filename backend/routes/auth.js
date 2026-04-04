@@ -1,8 +1,10 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 
 const router = express.Router();
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 /**
  * Helper to sign a JWT containing the user ID.
@@ -64,11 +66,64 @@ router.post('/login', async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      avatar: user.avatar,
       token: signToken(user._id),
     });
   } catch (error) {
     console.error('Login error:', error.message);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ─── POST /api/auth/google ──────────────────────────────────────────────────
+router.post('/google', async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({ message: 'Missing Google credential' });
+    }
+
+    // Verify the Google token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, picture, sub: googleId } = payload;
+
+    // Check if user already exists
+    let user = await User.findOne({ email });
+
+    if (user) {
+      // If user exists but doesn't have a googleId, update it
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.avatar = user.avatar || picture;
+        await user.save();
+      }
+    } else {
+      // Create new user instantly based on Google profile
+      user = await User.create({
+        name,
+        email,
+        googleId,
+        avatar: picture,
+        // password is omitted because it's optional
+      });
+    }
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      token: signToken(user._id),
+    });
+  } catch (error) {
+    console.error('Google Auth Error:', error.message);
+    res.status(401).json({ message: 'Failed to authenticate with Google' });
   }
 });
 
