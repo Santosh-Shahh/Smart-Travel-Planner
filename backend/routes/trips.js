@@ -1,7 +1,7 @@
 const express = require('express');
 const { protect } = require('../middleware/auth');
 const Trip = require('../models/Trip');
-const { generateItinerary, chatWithAssistant } = require('../services/openai');
+const { generateItinerary, chatWithAssistant } = require('../services/gemini');
 const { getWeatherForecast } = require('../services/weather');
 const { getPlaces } = require('../services/places');
 const { geocodeDestination } = require('../services/maps');
