@@ -12,7 +12,7 @@ const router = express.Router();
 // Generate a new itinerary (public — no auth required so guests can try it)
 router.post('/generate', async (req, res) => {
   try {
-    const { destination, days, budget } = req.body;
+    const { from, destination, days, budget } = req.body;
 
     if (!destination || !days || !budget) {
       return res
@@ -22,13 +22,14 @@ router.post('/generate', async (req, res) => {
 
     // Fetch data from all services in parallel for speed
     const [itinerary, weather, places, coordinates] = await Promise.all([
-      generateItinerary(destination, days, budget),
+      generateItinerary(from, destination, days, budget),
       getWeatherForecast(destination),
       getPlaces(destination),
       geocodeDestination(destination),
     ]);
 
     res.json({
+      from: from || null,
       destination,
       days: Number(days),
       budget,
@@ -50,11 +51,12 @@ router.post('/generate', async (req, res) => {
 // Save a generated trip to the database (auth required)
 router.post('/save', protect, async (req, res) => {
   try {
-    const { destination, days, budget, itinerary, weather, places, coordinates } =
+    const { from, destination, days, budget, itinerary, weather, places, coordinates } =
       req.body;
 
     const trip = await Trip.create({
       userId: req.user._id,
+      from: from || null,
       destination,
       days,
       budget,
@@ -68,6 +70,21 @@ router.post('/save', protect, async (req, res) => {
   } catch (error) {
     console.error('Save trip error:', error.message);
     res.status(500).json({ message: 'Failed to save trip' });
+  }
+});
+
+// ─── GET /api/trips/shared/:id ──────────────────────────────────────────────
+// Get a shared trip publicly by ID (no auth required)
+router.get('/shared/:id', async (req, res) => {
+  try {
+    const trip = await Trip.findById(req.params.id);
+    if (!trip) {
+      return res.status(404).json({ message: 'Shared trip not found' });
+    }
+    res.json(trip);
+  } catch (error) {
+    console.error('Shared trip error:', error.message);
+    res.status(500).json({ message: 'Failed to fetch shared trip' });
   }
 });
 

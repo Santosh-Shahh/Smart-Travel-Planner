@@ -1,17 +1,151 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { FaMapMarkerAlt, FaCalendarAlt, FaMoneyBillWave } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaMapMarkerAlt, FaCalendarAlt, FaMoneyBillWave, FaLocationArrow, FaPlaneDeparture } from 'react-icons/fa';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 
 const TripForm = () => {
+  const [from, setFrom] = useState('');
   const [destination, setDestination] = useState('');
   const [days, setDays] = useState('3');
   const [budget, setBudget] = useState('Moderate');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   
+  // Shared autocomplete state
+  const [activeField, setActiveField] = useState(null); // 'from' | 'destination' | null
+  const [suggestions, setSuggestions] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const formRef = useRef(null);
+
   const navigate = useNavigate();
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (formRef.current && !formRef.current.contains(event.target)) {
+        setActiveField(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Central debounced fetcher
+  useEffect(() => {
+    if (!activeField) {
+      setSuggestions([]);
+      return;
+    }
+
+    const query = activeField === 'from' ? from : destination;
+
+    if (query.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+
+    setIsSearching(true);
+    const fetchSuggestions = async () => {
+      try {
+        // Query our new backend Google Places proxy
+        const res = await api.get(`/places/autocomplete?input=${encodeURIComponent(query)}`);
+        
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          // Flatten into strings to easily display
+          setSuggestions(res.data.map(item => item.description));
+          setHighlightedIndex(-1);
+        } else {
+          setSuggestions([]);
+        }
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        setSuggestions([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const debounceId = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(debounceId);
+  }, [from, destination, activeField]);
+
+  const handleKeyDown = (e) => {
+    if (!activeField || suggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex(prev => (prev > 0 ? prev - 1 : prev));
+    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+      e.preventDefault();
+      handleSelectSuggestion(suggestions[highlightedIndex]);
+    } else if (e.key === 'Escape') {
+      setActiveField(null);
+    }
+  };
+
+  const handleSelectSuggestion = (suggestion) => {
+    if (activeField === 'from') {
+      setFrom(suggestion);
+    } else if (activeField === 'destination') {
+      setDestination(suggestion);
+    }
+    setActiveField(null);
+    setSuggestions([]);
+  };
+
+  const renderHighlightedText = (text, highlight) => {
+    if (!highlight.trim()) return text;
+    const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapeRegExp(highlight)})`, 'gi');
+    const parts = text.split(regex);
+    return (
+      <span>
+        {parts.map((part, i) => 
+          regex.test(part) ? <span key={i} className="font-bold text-primary-600">{part}</span> : part
+        )}
+      </span>
+    );
+  };
+
+  const handleGeolocate = (e) => {
+    e.preventDefault();
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+    
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try {
+        const { latitude, longitude } = position.coords;
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=en`);
+        const data = await res.json();
+        
+        let city = data.address.city || data.address.town || data.address.village || data.address.state_district || '';
+        let country = data.address.country || '';
+        
+        const locString = [city, country].filter(Boolean).join(', ');
+        if (locString) {
+          setFrom(locString);
+          toast.success('Location detected!');
+        } else {
+          toast.error('Could not precisely determine city');
+        }
+      } catch (err) {
+        toast.error('Failed to get location details');
+      } finally {
+        setIsLocating(false);
+      }
+    }, () => {
+      toast.error('Location permission denied');
+      setIsLocating(false);
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,24 +153,9 @@ const TripForm = () => {
       toast.error('Please enter a destination');
       return;
     }
-
-    setIsLoading(true);
     
-    // Using toast.promise for excellent UX during generation
-    toast.promise(
-      api.post('/trips/generate', { destination, days, budget }),
-      {
-        loading: 'AI is crafting your perfect itinerary (this takes 10-20s)...',
-        success: (response) => {
-          // Navigate to results page passing the generated data via location state
-          navigate('/results', { state: { tripData: response.data } });
-          return 'Itinerary generated successfully!';
-        },
-        error: 'Failed to generate itinerary. Please try again.',
-      }
-    ).finally(() => {
-      setIsLoading(false);
-    });
+    setActiveField(null);
+    navigate('/results', { state: { query: { from, destination, days, budget } } });
   };
 
   return (
@@ -46,9 +165,83 @@ const TripForm = () => {
       transition={{ duration: 0.5, delay: 0.2 }}
       className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 w-full max-w-4xl mx-auto"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 items-end">
-        {/* Destination */}
-        <div className="w-full md:flex-[2]">
+      <form onSubmit={handleSubmit} ref={formRef} className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+        
+        {/* ROW 1: From */}
+        <div className="w-full md:col-span-3">
+          <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">From 📍</label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <FaPlaneDeparture className="text-slate-400" />
+            </div>
+            <input
+              type="text"
+              value={from}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setActiveField('from');
+              }}
+              onKeyDown={handleKeyDown}
+              onFocus={() => { if (from.trim().length >= 2 && suggestions.length > 0) setActiveField('from'); else setActiveField('from'); }}
+              placeholder="e.g., Kathmandu, Nepal"
+              autoComplete="off"
+              className="w-full pl-11 pr-12 py-4 rounded-2xl bg-white border border-slate-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-50 transition-all outline-none text-slate-700 font-medium placeholder:font-normal"
+            />
+            {/* Locate Me Button */}
+            <button
+              type="button"
+              onClick={handleGeolocate}
+              disabled={isLocating}
+              title="Detect my location"
+              className="absolute inset-y-0 right-2 flex items-center justify-center p-2 my-auto h-10 w-10 text-primary-500 hover:bg-primary-50 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {isLocating ? (
+                 <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : (
+                 <FaLocationArrow />
+              )}
+            </button>
+
+            {/* Spinner Overlay */}
+            {activeField === 'from' && isSearching && (
+              <div className="absolute inset-y-0 right-12 pr-2 flex items-center pointer-events-none text-primary-500">
+                <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+
+            {/* Dropdown From */}
+            <AnimatePresence>
+              {activeField === 'from' && suggestions.length > 0 && (
+                <motion.ul
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute z-50 w-full mt-2 bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden py-2"
+                >
+                  {suggestions.map((suggestion, index) => (
+                    <li
+                      key={index}
+                      onClick={() => handleSelectSuggestion(suggestion)}
+                      onMouseEnter={() => setHighlightedIndex(index)}
+                      className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${
+                        highlightedIndex === index ? 'bg-primary-50/70' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <FaPlaneDeparture className={`text-sm flex-shrink-0 ${highlightedIndex === index ? 'text-primary-500' : 'text-slate-400'}`} />
+                      <span className="text-slate-700 text-sm font-medium truncate">
+                        {renderHighlightedText(suggestion, from)}
+                      </span>
+                    </li>
+                  ))}
+                </motion.ul>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* ROW 1: To (Destination) */}
+        <div className="w-full md:col-span-3">
           <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">Where to?</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -57,15 +250,58 @@ const TripForm = () => {
             <input
               type="text"
               value={destination}
-              onChange={(e) => setDestination(e.target.value)}
+              onChange={(e) => {
+                setDestination(e.target.value);
+                setActiveField('destination');
+              }}
+              onKeyDown={handleKeyDown}
+              onFocus={() => { if (destination.trim().length >= 2 && suggestions.length > 0) setActiveField('destination'); else setActiveField('destination'); }}
               placeholder="e.g. Kyoto, Japan"
-              className="w-full pl-11 pr-4 py-4 rounded-2xl bg-white border border-slate-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-50 transition-all outline-none text-slate-700 font-medium placeholder:font-normal"
+              autoComplete="off"
+              className="w-full pl-11 pr-10 py-4 rounded-2xl bg-white border border-slate-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-50 transition-all outline-none text-slate-700 font-medium placeholder:font-normal"
             />
+            
+            {/* Spinner Overlay */}
+            {activeField === 'destination' && isSearching && (
+              <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-primary-500">
+                <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            
+            {/* Dropdown Destination */}
+            <AnimatePresence>
+              {activeField === 'destination' && suggestions.length > 0 && (
+                <motion.ul
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute z-50 w-full mt-2 bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden py-2"
+                >
+                  {suggestions.map((suggestion, index) => (
+                    <li
+                      key={index}
+                      onClick={() => handleSelectSuggestion(suggestion)}
+                      onMouseEnter={() => setHighlightedIndex(index)}
+                      className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${
+                        highlightedIndex === index ? 'bg-primary-50/70' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <FaMapMarkerAlt className={`text-sm flex-shrink-0 ${highlightedIndex === index ? 'text-primary-500' : 'text-slate-400'}`} />
+                      <span className="text-slate-700 text-sm font-medium truncate">
+                        {renderHighlightedText(suggestion, destination)}
+                      </span>
+                    </li>
+                  ))}
+                </motion.ul>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* Days */}
-        <div className="w-full md:flex-[1]">
+        {/* ... (Duration and Budget inputs remain exactly the same structurally) ... */}
+        {/* ROW 2: Days */}
+        <div className="w-full md:col-span-2">
           <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">Duration</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -83,8 +319,8 @@ const TripForm = () => {
           </div>
         </div>
 
-        {/* Budget */}
-        <div className="w-full md:flex-[1]">
+        {/* ROW 2: Budget */}
+        <div className="w-full md:col-span-2">
           <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">Budget</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -102,21 +338,14 @@ const TripForm = () => {
           </div>
         </div>
 
-        {/* Submit */}
-        <div className="w-full md:flex-[1]">
+        {/* ROW 2: Submit */}
+        <div className="w-full md:col-span-2">
           <button
             type="submit"
-            disabled={isLoading}
-            className="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl font-bold shadow-lg shadow-primary-600/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group"
+            disabled={!destination.trim()}
+            className="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl font-bold shadow-lg shadow-primary-600/30 transition-all disabled:opacity-50 disabled:bg-slate-400 disabled:shadow-none disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group"
           >
-            <span className={`transition-opacity ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
-              Plan My Trip
-            </span>
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-6 w-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-              </div>
-            )}
+            <span>Plan My Trip</span>
           </button>
         </div>
       </form>

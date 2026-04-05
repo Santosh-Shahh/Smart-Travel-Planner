@@ -11,6 +11,11 @@ const tripSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    from: {
+      type: String,
+      default: null, // Legacy trips will just have null
+      trim: true,
+    },
     destination: {
       type: String,
       required: [true, 'Destination is required'],

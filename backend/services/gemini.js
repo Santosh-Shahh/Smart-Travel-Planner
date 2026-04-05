@@ -6,9 +6,9 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 /**
  * Generate a day-wise travel itinerary using Google Gemini.
  */
-const generateItinerary = async (destination, days, budget) => {
+const generateItinerary = async (from, destination, days, budget) => {
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-flash-latest',
     generationConfig: {
       temperature: 0.7,
       responseMimeType: 'application/json',
@@ -46,7 +46,10 @@ Return ONLY valid JSON following this exact structure:
   ]
 }`;
 
-  const userPrompt = `Create a ${days}-day travel itinerary for ${destination} with a budget of ${budget}. Include detailed activities, estimated costs, and practical travel tips.`;
+  const routeString = from ? `from ${from} to ${destination}` : `for ${destination}`;
+  const userPrompt = `Create a ${days}-day travel itinerary ${routeString} with a budget of ${budget}. 
+Include detailed activities, estimated costs, and practical travel tips. 
+${from ? 'Ensure Day 1 accurately reflects arrival and travel logistics from the origin location.' : ''}`;
 
   const response = await model.generateContent({
     contents: [
@@ -66,7 +69,7 @@ Return ONLY valid JSON following this exact structure:
  * Chat with the AI travel assistant via Google Gemini.
  */
 const chatWithAssistant = async (message, history = []) => {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
   // Map history to Gemini format { role: 'user' | 'model', parts: [{ text }] }
   const formattedHistory = history.map((msg) => ({
