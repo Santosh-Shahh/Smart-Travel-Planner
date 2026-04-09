@@ -20,17 +20,30 @@
 
 <div align="center">
 
-| Home | Itinerary Results |
-|:---:|:---:|
-| ![Home Page](screenshots/home.png) | ![Results Page](screenshots/results.png) |
+### 🏠 Home — Trip Planning Form
+![Home Page](screenshots/home.png)
 
-| Trip Dashboard | Budget Breakdown |
-|:---:|:---:|
-| ![Dashboard](screenshots/dashboard.png) | ![Budget](screenshots/budget.png) |
+---
+
+### 📊 Results — Budget Breakdown & Travel Tips
+![Results Page](screenshots/results.png)
+
+---
+
+### 🗓 Day-by-Day Itinerary with Place Images & Logistics
+![Itinerary View](screenshots/itinerary.png)
+
+---
+
+### 💰 Budget Breakdown — Donut Chart & Cost Allocation
+![Budget Breakdown](screenshots/budget.png)
+
+---
+
+### 📁 Dashboard — Saved Trips Management
+![Dashboard](screenshots/dashboard.png)
 
 </div>
-
-> **Note:** Add your screenshots to a `screenshots/` directory in the project root.
 
 ---
 
