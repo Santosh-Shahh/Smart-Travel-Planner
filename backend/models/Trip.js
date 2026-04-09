@@ -31,8 +31,17 @@ const tripSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Budget is required'],
     },
+    travelType: {
+      type: String,
+      enum: ['Solo', 'Friends', 'Family', 'Couple', null],
+      default: null,
+    },
+    interests: {
+      type: [String],
+      default: [],
+    },
     itinerary: {
-      type: mongoose.Schema.Types.Mixed, // Flexible JSON from OpenAI
+      type: mongoose.Schema.Types.Mixed, // Flexible JSON from AI
       required: true,
     },
     weather: {

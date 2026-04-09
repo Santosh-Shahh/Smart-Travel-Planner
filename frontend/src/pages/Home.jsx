@@ -21,7 +21,7 @@ const Home = () => {
             <FaMagic className="mr-1" /> AI-Powered Travel Planning
           </div>
           <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight leading-tight mb-6">
-            Design your dream trip in <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-secondary-500">seconds.</span>
+            Design your dream trip in <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2563EB] to-[#3B82F6]">seconds.</span>
           </h1>
           <p className="text-xl text-slate-600 leading-relaxed max-w-2xl mx-auto">
             Tell us where you want to go, and our AI will instantly generate a personalized day-by-day itinerary tailored to your budget and schedule.

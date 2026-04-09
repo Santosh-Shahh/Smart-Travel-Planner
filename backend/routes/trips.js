@@ -12,7 +12,7 @@ const router = express.Router();
 // Generate a new itinerary (public — no auth required so guests can try it)
 router.post('/generate', async (req, res) => {
   try {
-    const { from, destination, days, budget } = req.body;
+    const { from, destination, days, budget, travelType, interests } = req.body;
 
     if (!destination || !days || !budget) {
       return res
@@ -22,7 +22,7 @@ router.post('/generate', async (req, res) => {
 
     // Fetch data from all services in parallel for speed
     const [itinerary, weather, places, coordinates] = await Promise.all([
-      generateItinerary(from, destination, days, budget),
+      generateItinerary(from, destination, days, budget, travelType, interests),
       getWeatherForecast(destination),
       getPlaces(destination),
       geocodeDestination(destination),
@@ -33,6 +33,8 @@ router.post('/generate', async (req, res) => {
       destination,
       days: Number(days),
       budget,
+      travelType: travelType || null,
+      interests: interests || [],
       itinerary,
       weather,
       places,
@@ -51,7 +53,7 @@ router.post('/generate', async (req, res) => {
 // Save a generated trip to the database (auth required)
 router.post('/save', protect, async (req, res) => {
   try {
-    const { from, destination, days, budget, itinerary, weather, places, coordinates } =
+    const { from, destination, days, budget, travelType, interests, itinerary, weather, places, coordinates } =
       req.body;
 
     const trip = await Trip.create({
@@ -60,6 +62,8 @@ router.post('/save', protect, async (req, res) => {
       destination,
       days,
       budget,
+      travelType: travelType || null,
+      interests: interests || [],
       itinerary,
       weather,
       places,
@@ -70,6 +74,55 @@ router.post('/save', protect, async (req, res) => {
   } catch (error) {
     console.error('Save trip error:', error.message);
     res.status(500).json({ message: 'Failed to save trip' });
+  }
+});
+
+// ─── POST /api/trips/duplicate/:id ──────────────────────────────────────────
+// Duplicate a trip — re-generates itinerary with same parameters (auth required)
+router.post('/duplicate/:id', protect, async (req, res) => {
+  try {
+    const originalTrip = await Trip.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    });
+
+    if (!originalTrip) {
+      return res.status(404).json({ message: 'Trip not found' });
+    }
+
+    // Re-generate with same params
+    const [itinerary, weather, places, coordinates] = await Promise.all([
+      generateItinerary(
+        originalTrip.from,
+        originalTrip.destination,
+        originalTrip.days,
+        originalTrip.budget,
+        originalTrip.travelType,
+        originalTrip.interests
+      ),
+      getWeatherForecast(originalTrip.destination),
+      getPlaces(originalTrip.destination),
+      geocodeDestination(originalTrip.destination),
+    ]);
+
+    const newTrip = await Trip.create({
+      userId: req.user._id,
+      from: originalTrip.from,
+      destination: originalTrip.destination,
+      days: originalTrip.days,
+      budget: originalTrip.budget,
+      travelType: originalTrip.travelType,
+      interests: originalTrip.interests,
+      itinerary,
+      weather,
+      places,
+      coordinates,
+    });
+
+    res.status(201).json(newTrip);
+  } catch (error) {
+    console.error('Duplicate trip error:', error.message);
+    res.status(500).json({ message: 'Failed to duplicate trip' });
   }
 });
 

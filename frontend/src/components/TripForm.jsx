@@ -1,19 +1,37 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaMapMarkerAlt, FaCalendarAlt, FaMoneyBillWave, FaLocationArrow, FaPlaneDeparture } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaCalendarAlt, FaMoneyBillWave, FaLocationArrow, FaPlaneDeparture, FaUser, FaUsers, FaHeart, FaChild, FaUtensils, FaMountain, FaLandmark, FaGlassMartini, FaLeaf, FaShoppingBag } from 'react-icons/fa';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
+
+const TRAVEL_TYPES = [
+  { value: 'Solo', icon: FaUser, label: 'Solo' },
+  { value: 'Couple', icon: FaHeart, label: 'Couple' },
+  { value: 'Friends', icon: FaUsers, label: 'Friends' },
+  { value: 'Family', icon: FaChild, label: 'Family' },
+];
+
+const INTERESTS = [
+  { value: 'Food', icon: FaUtensils, label: 'Food' },
+  { value: 'Adventure', icon: FaMountain, label: 'Adventure' },
+  { value: 'History', icon: FaLandmark, label: 'History' },
+  { value: 'Nightlife', icon: FaGlassMartini, label: 'Nightlife' },
+  { value: 'Nature', icon: FaLeaf, label: 'Nature' },
+  { value: 'Shopping', icon: FaShoppingBag, label: 'Shopping' },
+];
 
 const TripForm = () => {
   const [from, setFrom] = useState('');
   const [destination, setDestination] = useState('');
   const [days, setDays] = useState('3');
   const [budget, setBudget] = useState('Moderate');
+  const [travelType, setTravelType] = useState('');
+  const [interests, setInterests] = useState([]);
   const [isLocating, setIsLocating] = useState(false);
   
   // Shared autocomplete state
-  const [activeField, setActiveField] = useState(null); // 'from' | 'destination' | null
+  const [activeField, setActiveField] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -49,11 +67,9 @@ const TripForm = () => {
     setIsSearching(true);
     const fetchSuggestions = async () => {
       try {
-        // Query our new backend Google Places proxy
         const res = await api.get(`/places/autocomplete?input=${encodeURIComponent(query)}`);
         
         if (Array.isArray(res.data) && res.data.length > 0) {
-          // Flatten into strings to easily display
           setSuggestions(res.data.map(item => item.description));
           setHighlightedIndex(-1);
         } else {
@@ -147,6 +163,14 @@ const TripForm = () => {
     });
   };
 
+  const toggleInterest = (interest) => {
+    setInterests(prev => 
+      prev.includes(interest) 
+        ? prev.filter(i => i !== interest) 
+        : [...prev, interest]
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!destination.trim()) {
@@ -155,7 +179,11 @@ const TripForm = () => {
     }
     
     setActiveField(null);
-    navigate('/results', { state: { query: { from, destination, days, budget } } });
+    navigate('/results', { 
+      state: { 
+        query: { from, destination, days, budget, travelType: travelType || null, interests } 
+      } 
+    });
   };
 
   return (
@@ -165,188 +193,225 @@ const TripForm = () => {
       transition={{ duration: 0.5, delay: 0.2 }}
       className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 w-full max-w-4xl mx-auto"
     >
-      <form onSubmit={handleSubmit} ref={formRef} className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-        
-        {/* ROW 1: From */}
-        <div className="w-full md:col-span-3">
-          <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">From 📍</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <FaPlaneDeparture className="text-slate-400" />
+      <form onSubmit={handleSubmit} ref={formRef} className="space-y-5">
+        {/* ROW 1: From & Destination */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* From */}
+          <div className="w-full">
+            <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">From 📍</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <FaPlaneDeparture className="text-slate-400" />
+              </div>
+              <input
+                type="text"
+                value={from}
+                onChange={(e) => {
+                  setFrom(e.target.value);
+                  setActiveField('from');
+                }}
+                onKeyDown={handleKeyDown}
+                onFocus={() => setActiveField('from')}
+                placeholder="e.g., Kathmandu, Nepal"
+                autoComplete="off"
+                className="w-full pl-11 pr-12 py-4 rounded-2xl bg-white border border-slate-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-50 transition-all outline-none text-slate-700 font-medium placeholder:font-normal"
+              />
+              <button
+                type="button"
+                onClick={handleGeolocate}
+                disabled={isLocating}
+                title="Detect my location"
+                className="absolute inset-y-0 right-2 flex items-center justify-center p-2 my-auto h-10 w-10 text-primary-500 hover:bg-primary-50 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {isLocating ? (
+                   <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                   <FaLocationArrow />
+                )}
+              </button>
+              {activeField === 'from' && isSearching && (
+                <div className="absolute inset-y-0 right-12 pr-2 flex items-center pointer-events-none text-primary-500">
+                  <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+              <AnimatePresence>
+                {activeField === 'from' && suggestions.length > 0 && (
+                  <motion.ul
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute z-50 w-full mt-2 bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden py-2"
+                  >
+                    {suggestions.map((suggestion, index) => (
+                      <li
+                        key={index}
+                        onClick={() => handleSelectSuggestion(suggestion)}
+                        onMouseEnter={() => setHighlightedIndex(index)}
+                        className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${
+                          highlightedIndex === index ? 'bg-primary-50/70' : 'hover:bg-slate-50'
+                        }`}
+                      >
+                        <FaPlaneDeparture className={`text-sm flex-shrink-0 ${highlightedIndex === index ? 'text-primary-500' : 'text-slate-400'}`} />
+                        <span className="text-slate-700 text-sm font-medium truncate">
+                          {renderHighlightedText(suggestion, from)}
+                        </span>
+                      </li>
+                    ))}
+                  </motion.ul>
+                )}
+              </AnimatePresence>
             </div>
-            <input
-              type="text"
-              value={from}
-              onChange={(e) => {
-                setFrom(e.target.value);
-                setActiveField('from');
-              }}
-              onKeyDown={handleKeyDown}
-              onFocus={() => { if (from.trim().length >= 2 && suggestions.length > 0) setActiveField('from'); else setActiveField('from'); }}
-              placeholder="e.g., Kathmandu, Nepal"
-              autoComplete="off"
-              className="w-full pl-11 pr-12 py-4 rounded-2xl bg-white border border-slate-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-50 transition-all outline-none text-slate-700 font-medium placeholder:font-normal"
-            />
-            {/* Locate Me Button */}
+          </div>
+
+          {/* Destination */}
+          <div className="w-full">
+            <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">Where to?</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <FaMapMarkerAlt className="text-slate-400" />
+              </div>
+              <input
+                type="text"
+                value={destination}
+                onChange={(e) => {
+                  setDestination(e.target.value);
+                  setActiveField('destination');
+                }}
+                onKeyDown={handleKeyDown}
+                onFocus={() => setActiveField('destination')}
+                placeholder="e.g. Kyoto, Japan"
+                autoComplete="off"
+                className="w-full pl-11 pr-10 py-4 rounded-2xl bg-white border border-slate-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-50 transition-all outline-none text-slate-700 font-medium placeholder:font-normal"
+              />
+              {activeField === 'destination' && isSearching && (
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-primary-500">
+                  <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+              <AnimatePresence>
+                {activeField === 'destination' && suggestions.length > 0 && (
+                  <motion.ul
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute z-50 w-full mt-2 bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden py-2"
+                  >
+                    {suggestions.map((suggestion, index) => (
+                      <li
+                        key={index}
+                        onClick={() => handleSelectSuggestion(suggestion)}
+                        onMouseEnter={() => setHighlightedIndex(index)}
+                        className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${
+                          highlightedIndex === index ? 'bg-primary-50/70' : 'hover:bg-slate-50'
+                        }`}
+                      >
+                        <FaMapMarkerAlt className={`text-sm flex-shrink-0 ${highlightedIndex === index ? 'text-primary-500' : 'text-slate-400'}`} />
+                        <span className="text-slate-700 text-sm font-medium truncate">
+                          {renderHighlightedText(suggestion, destination)}
+                        </span>
+                      </li>
+                    ))}
+                  </motion.ul>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+
+        {/* ROW 2: Duration, Budget, Submit */}
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+          <div className="w-full md:col-span-2">
+            <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">Duration</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <FaCalendarAlt className="text-slate-400" />
+              </div>
+              <select
+                value={days}
+                onChange={(e) => setDays(e.target.value)}
+                className="w-full pl-11 pr-4 py-4 rounded-2xl bg-white border border-slate-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-50 transition-all outline-none appearance-none cursor-pointer text-slate-700 font-medium"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 10, 14].map(d => (
+                  <option key={d} value={d}>{d} Day{d > 1 ? 's' : ''}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="w-full md:col-span-2">
+            <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">Budget</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <FaMoneyBillWave className="text-slate-400" />
+              </div>
+              <select
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                className="w-full pl-11 pr-4 py-4 rounded-2xl bg-white border border-slate-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-50 transition-all outline-none appearance-none cursor-pointer text-slate-700 font-medium"
+              >
+                <option value="Budget-friendly">Budget</option>
+                <option value="Moderate">Moderate</option>
+                <option value="Luxury">Luxury</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="w-full md:col-span-2">
             <button
-              type="button"
-              onClick={handleGeolocate}
-              disabled={isLocating}
-              title="Detect my location"
-              className="absolute inset-y-0 right-2 flex items-center justify-center p-2 my-auto h-10 w-10 text-primary-500 hover:bg-primary-50 rounded-xl transition-colors disabled:opacity-50"
+              type="submit"
+              disabled={!destination.trim()}
+              className="w-full py-4 bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 text-white rounded-2xl font-bold shadow-lg shadow-primary-600/30 transition-all disabled:opacity-50 disabled:bg-slate-400 disabled:bg-none disabled:shadow-none disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group"
             >
-              {isLocating ? (
-                 <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              ) : (
-                 <FaLocationArrow />
-              )}
+              <span className="relative z-10">Plan My Trip</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-primary-700 to-secondary-700 opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
-
-            {/* Spinner Overlay */}
-            {activeField === 'from' && isSearching && (
-              <div className="absolute inset-y-0 right-12 pr-2 flex items-center pointer-events-none text-primary-500">
-                <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              </div>
-            )}
-
-            {/* Dropdown From */}
-            <AnimatePresence>
-              {activeField === 'from' && suggestions.length > 0 && (
-                <motion.ul
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute z-50 w-full mt-2 bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden py-2"
-                >
-                  {suggestions.map((suggestion, index) => (
-                    <li
-                      key={index}
-                      onClick={() => handleSelectSuggestion(suggestion)}
-                      onMouseEnter={() => setHighlightedIndex(index)}
-                      className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${
-                        highlightedIndex === index ? 'bg-primary-50/70' : 'hover:bg-slate-50'
-                      }`}
-                    >
-                      <FaPlaneDeparture className={`text-sm flex-shrink-0 ${highlightedIndex === index ? 'text-primary-500' : 'text-slate-400'}`} />
-                      <span className="text-slate-700 text-sm font-medium truncate">
-                        {renderHighlightedText(suggestion, from)}
-                      </span>
-                    </li>
-                  ))}
-                </motion.ul>
-              )}
-            </AnimatePresence>
           </div>
         </div>
 
-        {/* ROW 1: To (Destination) */}
-        <div className="w-full md:col-span-3">
-          <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">Where to?</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <FaMapMarkerAlt className="text-slate-400" />
-            </div>
-            <input
-              type="text"
-              value={destination}
-              onChange={(e) => {
-                setDestination(e.target.value);
-                setActiveField('destination');
-              }}
-              onKeyDown={handleKeyDown}
-              onFocus={() => { if (destination.trim().length >= 2 && suggestions.length > 0) setActiveField('destination'); else setActiveField('destination'); }}
-              placeholder="e.g. Kyoto, Japan"
-              autoComplete="off"
-              className="w-full pl-11 pr-10 py-4 rounded-2xl bg-white border border-slate-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-50 transition-all outline-none text-slate-700 font-medium placeholder:font-normal"
-            />
-            
-            {/* Spinner Overlay */}
-            {activeField === 'destination' && isSearching && (
-              <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-primary-500">
-                <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              </div>
-            )}
-            
-            {/* Dropdown Destination */}
-            <AnimatePresence>
-              {activeField === 'destination' && suggestions.length > 0 && (
-                <motion.ul
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute z-50 w-full mt-2 bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden py-2"
-                >
-                  {suggestions.map((suggestion, index) => (
-                    <li
-                      key={index}
-                      onClick={() => handleSelectSuggestion(suggestion)}
-                      onMouseEnter={() => setHighlightedIndex(index)}
-                      className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${
-                        highlightedIndex === index ? 'bg-primary-50/70' : 'hover:bg-slate-50'
-                      }`}
-                    >
-                      <FaMapMarkerAlt className={`text-sm flex-shrink-0 ${highlightedIndex === index ? 'text-primary-500' : 'text-slate-400'}`} />
-                      <span className="text-slate-700 text-sm font-medium truncate">
-                        {renderHighlightedText(suggestion, destination)}
-                      </span>
-                    </li>
-                  ))}
-                </motion.ul>
-              )}
-            </AnimatePresence>
+        {/* ROW 3: Travel Type Pills */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-3 ml-1">Who's traveling?</label>
+          <div className="flex flex-wrap gap-2">
+            {TRAVEL_TYPES.map(({ value, icon: Icon, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setTravelType(prev => prev === value ? '' : value)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
+                  travelType === value
+                    ? 'bg-primary-50 border-primary-300 text-primary-700 shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* ... (Duration and Budget inputs remain exactly the same structurally) ... */}
-        {/* ROW 2: Days */}
-        <div className="w-full md:col-span-2">
-          <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">Duration</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <FaCalendarAlt className="text-slate-400" />
-            </div>
-            <select
-              value={days}
-              onChange={(e) => setDays(e.target.value)}
-              className="w-full pl-11 pr-4 py-4 rounded-2xl bg-white border border-slate-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-50 transition-all outline-none appearance-none cursor-pointer text-slate-700 font-medium"
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 10, 14].map(d => (
-                <option key={d} value={d}>{d} Day{d > 1 ? 's' : ''}</option>
-              ))}
-            </select>
+        {/* ROW 4: Interest Chips */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-3 ml-1">What are you into?</label>
+          <div className="flex flex-wrap gap-2">
+            {INTERESTS.map(({ value, icon: Icon, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => toggleInterest(value)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
+                  interests.includes(value)
+                    ? 'bg-secondary-50 border-secondary-300 text-secondary-700 shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
           </div>
-        </div>
-
-        {/* ROW 2: Budget */}
-        <div className="w-full md:col-span-2">
-          <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">Budget</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <FaMoneyBillWave className="text-slate-400" />
-            </div>
-            <select
-              value={budget}
-              onChange={(e) => setBudget(e.target.value)}
-              className="w-full pl-11 pr-4 py-4 rounded-2xl bg-white border border-slate-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-50 transition-all outline-none appearance-none cursor-pointer text-slate-700 font-medium"
-            >
-              <option value="Budget-friendly">Budget</option>
-              <option value="Moderate">Moderate</option>
-              <option value="Luxury">Luxury</option>
-            </select>
-          </div>
-        </div>
-
-        {/* ROW 2: Submit */}
-        <div className="w-full md:col-span-2">
-          <button
-            type="submit"
-            disabled={!destination.trim()}
-            className="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white rounded-2xl font-bold shadow-lg shadow-primary-600/30 transition-all disabled:opacity-50 disabled:bg-slate-400 disabled:shadow-none disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group"
-          >
-            <span>Plan My Trip</span>
-          </button>
         </div>
       </form>
     </motion.div>

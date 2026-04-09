@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { motion } from 'framer-motion';
 import ItineraryCard from '../components/ItineraryCard';
 import WeatherCard from '../components/WeatherCard';
-import LoadingSkeleton from '../components/LoadingSkeleton';
+import BudgetBreakdown from '../components/BudgetBreakdown';
+import TripMap from '../components/TripMap';
+import AnimatedLoader from '../components/AnimatedLoader';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
-import { FaSave, FaCheck, FaExclamationTriangle, FaShareAlt } from 'react-icons/fa';
+import { exportToPDF } from '../utils/pdfExport';
+import { FaSave, FaCheck, FaExclamationTriangle, FaShareAlt, FaMap, FaListUl, FaFilePdf } from 'react-icons/fa';
 
 const Results = () => {
   const location = useLocation();
@@ -19,6 +23,8 @@ const Results = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [savedTripId, setSavedTripId] = useState(null);
+  const [activeView, setActiveView] = useState('itinerary'); // 'itinerary' | 'map'
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -45,8 +51,8 @@ const Results = () => {
           }
         } else if (location.state?.query) {
           // Generative fetch initiated from TripForm
-          const { from, destination, days, budget } = location.state.query;
-          const response = await api.post('/trips/generate', { from, destination, days, budget });
+          const { from, destination, days, budget, travelType, interests } = location.state.query;
+          const response = await api.post('/trips/generate', { from, destination, days, budget, travelType, interests });
           if (isMounted) {
             setTripData(response.data);
             toast.success('Itinerary generated successfully!');
@@ -54,8 +60,7 @@ const Results = () => {
         }
       } catch (error) {
         if (isMounted) {
-          toast.error(error.response?.data?.message || 'Failed to fetch trip data');
-          // Navigate to home after 2 seconds if error
+          toast.error(error.response?.data?.message || 'Failed to generate itinerary. Please try again.');
           setTimeout(() => navigate('/'), 2000);
         }
       } finally {
@@ -97,7 +102,6 @@ const Results = () => {
   };
 
   const handleShareTrip = async () => {
-    // If it hasn't been saved yet, we need to save it to get an ID to share
     if (!isSaved) {
       if (!user) {
         toast.error('Please log in to securely save and share this trip!');
@@ -109,7 +113,6 @@ const Results = () => {
         setIsSaved(true);
         setSavedTripId(response.data._id);
         
-        // Use new ID for sharing
         const shareUrl = `${window.location.origin}/trip/${response.data._id}`;
         await navigator.clipboard.writeText(shareUrl);
         toast.success('Trip saved and link copied to clipboard!');
@@ -119,7 +122,6 @@ const Results = () => {
         setIsSaving(false);
       }
     } else {
-      // Already saved, copy the link
       const idToShare = savedTripId || tripData._id || id;
       const shareUrl = `${window.location.origin}/trip/${idToShare}`;
       try {
@@ -131,25 +133,48 @@ const Results = () => {
     }
   };
 
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const filename = `${tripData.destination || 'trip'}-itinerary.pdf`.replace(/[^a-z0-9.-]/gi, '-').toLowerCase();
+      await exportToPDF('pdf-export-area', filename);
+      toast.success('PDF downloaded!');
+    } catch (error) {
+      toast.error('Failed to export PDF');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         
         {isLoading ? (
-          <div className="mt-8">
-            <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-              <div className="h-6 w-6 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
-              Crafting your perfect itinerary...
-            </h2>
-            <LoadingSkeleton />
-          </div>
+          <AnimatedLoader />
         ) : tripData ? (
           <>
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10"
+            >
               <div>
-                <div className="inline-block px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold mb-3">
-                  {tripData.days} Days • {tripData.budget}
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <span className="inline-block px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold">
+                    {tripData.days} Days • {tripData.budget}
+                  </span>
+                  {tripData.travelType && (
+                    <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
+                      {tripData.travelType}
+                    </span>
+                  )}
+                  {tripData.itinerary?.totalEstimatedCost && (
+                    <span className="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-bold">
+                      {tripData.itinerary.totalEstimatedCost}
+                    </span>
+                  )}
                 </div>
                 <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
                   Trip {tripData.from ? <span className="text-primary-600">from {tripData.from} </span> : ''}
@@ -157,12 +182,26 @@ const Results = () => {
                 </h1>
               </div>
               
-              <div className="flex gap-3 w-full md:w-auto">
+              <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                {/* PDF Export */}
+                <button
+                  onClick={handleExportPDF}
+                  disabled={isExporting}
+                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-full font-bold transition-all shadow-sm bg-white border border-slate-200 hover:bg-red-50 hover:border-red-200 text-slate-700 hover:text-red-600 active:scale-95 disabled:opacity-50"
+                >
+                  {isExporting ? (
+                    <div className="h-4 w-4 border-2 border-slate-300 border-t-red-500 rounded-full animate-spin" />
+                  ) : (
+                    <FaFilePdf />
+                  )}
+                  PDF
+                </button>
+
                 {/* Share Button */}
                 <button
                   onClick={handleShareTrip}
                   disabled={isSaving}
-                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold transition-all shadow-sm bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-primary-600 active:scale-95"
+                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-full font-bold transition-all shadow-sm bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-primary-600 active:scale-95"
                 >
                   <FaShareAlt /> Share
                 </button>
@@ -186,37 +225,94 @@ const Results = () => {
                   )}
                 </button>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Travel Tips Banner */}
-            {tripData.itinerary?.travelTips && tripData.itinerary.travelTips.length > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-8 flex gap-4">
-                <FaExclamationTriangle className="text-amber-500 h-6 w-6 shrink-0" />
-                <div>
-                  <h3 className="font-bold text-amber-800 mb-2">Essential Travel Tips</h3>
-                  <ul className="list-disc pl-5 space-y-1 text-sm text-amber-700">
-                    {tripData.itinerary.travelTips.map((tip, idx) => (
-                      <li key={idx}>{tip}</li>
+            {/* PDF Export Container */}
+            <div id="pdf-export-area">
+              {/* Travel Tips Banner */}
+              {tripData.itinerary?.travelTips && tripData.itinerary.travelTips.length > 0 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-8 flex gap-4"
+                >
+                  <FaExclamationTriangle className="text-amber-500 h-6 w-6 shrink-0" />
+                  <div>
+                    <h3 className="font-bold text-amber-800 mb-2">Essential Travel Tips</h3>
+                    <ul className="list-disc pl-5 space-y-1 text-sm text-amber-700">
+                      {tripData.itinerary.travelTips.map((tip, idx) => (
+                        <li key={idx}>{tip}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Budget Breakdown */}
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+                <BudgetBreakdown itinerary={tripData.itinerary} totalDays={tripData.days} />
+              </motion.div>
+
+              {/* Weather Forecast */}
+              {tripData.weather && tripData.weather.forecast && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                  <WeatherCard forecast={tripData.weather.forecast} />
+                </motion.div>
+              )}
+
+              {/* View Toggle Tabs */}
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl w-fit mb-8 mt-4">
+                <button
+                  onClick={() => setActiveView('itinerary')}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                    activeView === 'itinerary'
+                      ? 'bg-white text-slate-800 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <FaListUl className="h-3.5 w-3.5" /> Itinerary
+                </button>
+                <button
+                  onClick={() => setActiveView('map')}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                    activeView === 'map'
+                      ? 'bg-white text-slate-800 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <FaMap className="h-3.5 w-3.5" /> Map View
+                </button>
+              </div>
+
+              {/* Itinerary or Map */}
+              {activeView === 'itinerary' ? (
+                tripData.itinerary?.days && (
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }}
+                    className="mt-4"
+                  >
+                    <h2 className="text-3xl font-extrabold text-slate-900 mb-8">Your Itinerary</h2>
+                    {tripData.itinerary.days.map((day) => (
+                      <ItineraryCard 
+                        key={day.day} 
+                        day={day} 
+                        destination={tripData.destination}
+                        totalDays={tripData.itinerary.totalDays || tripData.days}
+                      />
                     ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {/* Weather Forecast */}
-            {tripData.weather && tripData.weather.forecast && (
-              <WeatherCard forecast={tripData.weather.forecast} />
-            )}
-
-            {/* Itinerary */}
-            {tripData.itinerary?.days && (
-              <div className="mt-12">
-                <h2 className="text-3xl font-extrabold text-slate-900 mb-8">Your Itinerary</h2>
-                {tripData.itinerary.days.map((day) => (
-                  <ItineraryCard key={day.day} day={day} destination={tripData.destination} />
-                ))}
-              </div>
-            )}
+                  </motion.div>
+                )
+              ) : (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <TripMap 
+                    itinerary={tripData.itinerary} 
+                    coordinates={tripData.coordinates}
+                  />
+                </motion.div>
+              )}
+            </div>
           </>
         ) : null}
         
