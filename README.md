@@ -7,7 +7,8 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white)](https://react.dev/)
 [![Node.js](https://img.shields.io/badge/Node.js-Express-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
-[![Groq](https://img.shields.io/badge/Groq-LLaMA_3.3-F55036?style=flat-square)](https://groq.com/)
+[![Gemini](https://img.shields.io/badge/Gemini-1.5_Flash-8E75B2?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev/)
+[![Groq](https://img.shields.io/badge/Groq-LLaMA_3.3_Fallback-F55036?style=flat-square)](https://groq.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 
 [Features](#-features) · [Tech Stack](#-tech-stack) · [Getting Started](#-getting-started) · [Architecture](#-architecture) · [Contributing](#-contributing)
@@ -50,7 +51,7 @@
 ## ✨ Features
 
 ### Core
-- **AI Itinerary Generation** — Generates detailed day-by-day travel plans using Groq's LLaMA 3.3 70B model with realistic activities, timings, and local recommendations.
+- **AI Itinerary Generation** — Generates detailed day-by-day travel plans using **Google Gemini 1.5 Flash** with an automatic high-speed fallback to **Groq's LLaMA 3.3 70B** to entirely bypass daily token limits.
 - **From → To Routing** — Plan trips with specific origin and destination cities for accurate travel logistics and Day 1 arrival planning.
 - **Budget-Aware Planning** — Choose from Budget, Medium, or Premium tiers; the AI tailors accommodations, dining, and activities to match with estimated costs in USD.
 - **Personalized Trips** — Select travel type (Solo, Couple, Family, Friends) and interests (Food, Adventure, Culture, Nightlife, etc.) for tailored recommendations.
@@ -60,6 +61,12 @@
 - **Interactive Map View** — Google Maps integration with geocoded destination markers and place imagery.
 - **Google Places Autocomplete** — Real-time city suggestions as you type for both origin and destination fields.
 - **Place Photography** — Automatically fetches high-quality images for each destination using Google Places API.
+
+### Security & Production Readiness
+- **Rate Limiting & Helmet** — Secured backend API utilizing strict request quotas and critical HTTP headers preventing abuse and exploits.
+- **Resilient AI Pipelines** — Exponential backend retry loops combined with seamless LLM provider fallbacks ensure 99% reliability.
+- **Robust Session Handling** — Real-time JWT expiration checks and global 401 interceptors guard against ghost failures and force clean logouts.
+- **Accessibility** — ARIA-labeled interactive elements and completely mobile-accessible navigations.
 
 ### User Experience
 - **Save & Manage Trips** — Authenticated users can save, view, duplicate, and delete itineraries from a personal dashboard.
@@ -80,7 +87,7 @@
 | **Frontend** | React 19, Vite 8, Tailwind CSS v4, Framer Motion, Recharts |
 | **Backend** | Node.js, Express.js |
 | **Database** | MongoDB Atlas (Mongoose ODM) |
-| **AI Engine** | Groq SDK — LLaMA 3.3 70B Versatile |
+| **AI Engine** | Google Gemini 1.5 Flash (Primary) • Groq LLaMA 3.3 70B Versatile (Fallback) |
 | **Maps** | Google Maps JavaScript API, Places API, Geocoding API |
 | **Weather** | OpenWeatherMap API |
 | **Auth** | JWT + Google OAuth 2.0 |
@@ -128,7 +135,7 @@
 ## 🔄 How It Works
 
 1. **Input** — User enters origin city, destination, trip duration (1–30 days), budget tier, travel type, and interests.
-2. **AI Generation** — Backend sends a structured prompt to Groq's LLaMA 3.3 70B model, which returns a complete JSON itinerary with activities, costs, and logistics.
+2. **AI Generation** — Backend sends a structured prompt to **Google Gemini**. If the Gemini API rate limit is hit, it auto-falls back to **Groq's LLaMA 3.3 70B** model, which returns a complete JSON itinerary with activities, costs, and logistics.
 3. **Data Enrichment** — In parallel, the backend fetches weather forecasts, place images, and geocoordinates from Google Maps and OpenWeatherMap APIs.
 4. **Presentation** — Frontend renders the itinerary day-by-day with interactive cards, budget charts, travel logistics, weather info, and an embedded map.
 5. **Persistence** — Authenticated users can save trips to MongoDB and manage them from a personal dashboard.
@@ -142,6 +149,7 @@
 - [Node.js](https://nodejs.org/) v18+
 - [MongoDB Atlas](https://www.mongodb.com/atlas) cluster (free tier works)
 - API Keys:
+  - [Google AI Studio (Gemini)](https://aistudio.google.com/) — Free tier
   - [Groq](https://console.groq.com/) — Free tier available
   - [Google Cloud](https://console.cloud.google.com/) — Maps, Places, Geocoding, OAuth
   - [OpenWeatherMap](https://openweathermap.org/api) — Free tier available
@@ -166,6 +174,7 @@ Edit `backend/.env` with your credentials:
 ```env
 MONGO_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/travel-planner
 JWT_SECRET=your_jwt_secret
+GEMINI_API_KEY=AIzaXXXXXXXXXXXX
 GROQ_API_KEY=gsk_xxxxxxxxxxxx
 GOOGLE_MAPS_API_KEY=AIzaXXXXXXXXXXXX
 OPENWEATHER_API_KEY=xxxxxxxxxxxx
