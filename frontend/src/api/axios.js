@@ -21,4 +21,20 @@ api.interceptors.request.use(
   }
 );
 
+// Add a response interceptor to handle 401s (expired/invalid tokens) globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // Using window.location to force a hard reload and clear all states
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

@@ -30,6 +30,7 @@ const Dashboard = () => {
 
   const handleDelete = async (e, id) => {
     e.stopPropagation();
+    e.preventDefault();
     if (!window.confirm('Are you sure you want to delete this trip?')) return;
     
     try {
@@ -43,6 +44,7 @@ const Dashboard = () => {
 
   const handleDuplicate = async (e, id) => {
     e.stopPropagation();
+    e.preventDefault();
     setDuplicatingId(id);
     try {
       const { data } = await api.post(`/trips/duplicate/${id}`);
@@ -137,7 +139,7 @@ const Dashboard = () => {
                 >
                   {/* Cover gradient header */}
                   <div className="h-32 bg-gradient-to-br from-primary-500 via-primary-600 to-secondary-600 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-black/10" />
+                    <div className="absolute inset-0 bg-black/10 pointer-events-none" />
                     <div className="absolute bottom-4 left-4 right-4">
                       <h3 className="text-xl font-bold text-white truncate drop-shadow-sm">
                         {trip.destination}
@@ -152,7 +154,7 @@ const Dashboard = () => {
                       )}
                     </div>
                     {/* Action buttons */}
-                    <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-3 right-3 flex gap-1.5 z-10">
                       <button 
                         onClick={(e) => handleDuplicate(e, trip._id)}
                         disabled={duplicatingId === trip._id}

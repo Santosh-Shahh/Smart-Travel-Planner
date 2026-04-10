@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
 import api from '../api/axios';
 
 const AuthContext = createContext(null);
@@ -14,7 +15,15 @@ export const AuthProvider = ({ children }) => {
 
     if (storedUser && token) {
       try {
-        setUser(JSON.parse(storedUser));
+        const decoded = jwtDecode(token);
+        if (decoded.exp * 1000 < Date.now()) {
+          // Token expired — force logout
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+        } else {
+          setUser(JSON.parse(storedUser));
+        }
       } catch (e) {
         localStorage.removeItem('user');
         localStorage.removeItem('token');

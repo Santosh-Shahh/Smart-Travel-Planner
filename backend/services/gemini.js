@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Groq = require("groq-sdk");
 
 let _model = null;
 
@@ -98,8 +99,25 @@ ${from ? 'Ensure Day 1 accurately reflects arrival and travel logistics from the
 
   const prompt = `${systemPrompt}\n\nUSER REQUEST:\n${userPrompt}`;
 
+  const MAX_RETRIES = 2;
+  const BASE_DELAY_MS = 5000;
+
   try {
-    const result = await getModel().generateContent(prompt);
+    let result;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        result = await getModel().generateContent(prompt);
+        break;
+      } catch (retryErr) {
+        if (retryErr.status === 429 && attempt < MAX_RETRIES) {
+          const delay = BASE_DELAY_MS * Math.pow(2, attempt);
+          console.warn(`Gemini rate limited (429). Retrying in ${delay / 1000}s... (attempt ${attempt + 1}/${MAX_RETRIES})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          throw retryErr;
+        }
+      }
+    }
     const response = await result.response;
     const content = response.text();
     
@@ -107,7 +125,34 @@ ${from ? 'Ensure Day 1 accurately reflects arrival and travel logistics from the
     const cleaned = content.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '');
     return JSON.parse(cleaned);
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error("Gemini API Error:", error.message);
+    
+    // Fallback to Groq if Gemini fails or is rate limited
+    if (process.env.GROQ_API_KEY) {
+      console.log('Falling back to Groq API...');
+      try {
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+        const groqResponse = await groq.chat.completions.create({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          model: "llama-3.3-70b-versatile", // Valid available Groq model
+          temperature: 0.7,
+          response_format: { type: "json_object" }
+        });
+        
+        const content = groqResponse.choices[0]?.message?.content;
+        return JSON.parse(content);
+      } catch (groqError) {
+        console.error("Groq Fallback Error:", groqError.message);
+        throw new Error('AI services are temporarily unavailable. Please try again later.');
+      }
+    }
+
+    if (error.status === 429) {
+      throw new Error('AI service is temporarily busy. Please wait a moment and try again.');
+    }
     throw new Error('Failed to generate itinerary with Gemini. Check server logs.');
   }
 };

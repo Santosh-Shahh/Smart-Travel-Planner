@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaRobot, FaTimes, FaPaperPlane } from 'react-icons/fa';
 import api from '../api/axios';
@@ -10,6 +10,15 @@ const ChatBot = () => {
     { role: 'assistant', content: 'Hi there! I am your AI travel guide. Ask me anything about your destination!' }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [history, isLoading, isOpen]);
 
   const toggleChat = () => setIsOpen(!isOpen);
 
@@ -47,7 +56,8 @@ const ChatBot = () => {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={toggleChat}
-        className="fixed bottom-6 right-6 h-14 w-14 bg-primary-600 text-white rounded-full flex items-center justify-center shadow-2xl z-50 hover:bg-primary-700 transition-colors"
+        aria-label="Toggle Travel Assistant AI"
+        className="fixed bottom-6 right-6 h-14 w-14 bg-primary-600 text-white rounded-full flex items-center justify-center shadow-2xl z-50 hover:bg-primary-700 transition-colors focus:outline-none focus:ring-4 focus:ring-primary-500/50"
       >
         <FaRobot className="h-6 w-6" />
       </motion.button>
@@ -71,7 +81,8 @@ const ChatBot = () => {
               </div>
               <button 
                 onClick={toggleChat}
-                className="text-white/80 hover:text-white transition-colors"
+                aria-label="Close chat"
+                className="text-white/80 hover:text-white transition-colors focus:outline-none"
               >
                 <FaTimes />
               </button>
@@ -99,6 +110,7 @@ const ChatBot = () => {
                   <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Input Area */}
@@ -114,7 +126,8 @@ const ChatBot = () => {
                 <button 
                   type="submit"
                   disabled={!message.trim() || isLoading}
-                  className="absolute right-1 top-1 h-8 w-8 flex items-center justify-center bg-primary-600 hover:bg-primary-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-full transition-colors"
+                  aria-label="Send message"
+                  className="absolute right-1 top-1 h-8 w-8 flex items-center justify-center bg-primary-600 hover:bg-primary-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-full transition-colors focus:outline-none"
                 >
                   <FaPaperPlane className="h-3 w-3 -ml-0.5" />
                 </button>

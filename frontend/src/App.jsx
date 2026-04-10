@@ -6,6 +6,7 @@ import Results from './pages/Results';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import NotFound from './pages/NotFound';
 import ChatBot from './components/ChatBot';
 import { useAuth } from './context/AuthContext';
 
@@ -41,6 +42,9 @@ const App = () => {
               </PrivateRoute>
             } 
           />
+
+          {/* 404 Route */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />

@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const { protect } = require('../middleware/auth');
 const Trip = require('../models/Trip');
 const { generateItinerary, chatWithAssistant } = require('../services/gemini');
@@ -8,9 +9,12 @@ const { geocodeDestination } = require('../services/maps');
 
 const router = express.Router();
 
+const generateLimiter = rateLimit({ windowMs: 60 * 1000, max: 5, message: { message: 'Too many requests. Please wait a minute before generating another trip.' } });
+const chatLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: { message: 'Too many chat messages. Please slow down.' } });
+
 // ─── POST /api/trips/generate ───────────────────────────────────────────────
 // Generate a new itinerary (public — no auth required so guests can try it)
-router.post('/generate', async (req, res) => {
+router.post('/generate', generateLimiter, async (req, res) => {
   try {
     const { from, destination, days, budget, travelType, interests } = req.body;
 
@@ -197,7 +201,7 @@ router.delete('/:id', protect, async (req, res) => {
 
 // ─── POST /api/trips/chat ───────────────────────────────────────────────────
 // AI chatbot endpoint
-router.post('/chat', async (req, res) => {
+router.post('/chat', chatLimiter, async (req, res) => {
   try {
     const { message, history } = req.body;
 

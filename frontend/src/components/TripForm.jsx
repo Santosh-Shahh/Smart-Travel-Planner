@@ -198,7 +198,7 @@ const TripForm = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* From */}
           <div className="w-full">
-            <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">From 📍</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">From 📍 <span className="text-slate-400 font-normal">(optional)</span></label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <FaPlaneDeparture className="text-slate-400" />
@@ -221,7 +221,8 @@ const TripForm = () => {
                 onClick={handleGeolocate}
                 disabled={isLocating}
                 title="Detect my location"
-                className="absolute inset-y-0 right-2 flex items-center justify-center p-2 my-auto h-10 w-10 text-primary-500 hover:bg-primary-50 rounded-xl transition-colors disabled:opacity-50"
+                aria-label="Detect my location automatically"
+                className="absolute inset-y-0 right-2 flex items-center justify-center p-2 my-auto h-10 w-10 text-primary-500 hover:bg-primary-50 rounded-xl transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 {isLocating ? (
                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />

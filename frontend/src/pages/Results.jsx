@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useLocation, useNavigate, useParams, Navigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import ItineraryCard from '../components/ItineraryCard';
@@ -25,6 +25,10 @@ const Results = () => {
   const [savedTripId, setSavedTripId] = useState(null);
   const [activeView, setActiveView] = useState('itinerary'); // 'itinerary' | 'map'
   const [isExporting, setIsExporting] = useState(false);
+  const [errorMap, setErrorMap] = useState(null);
+  
+  // Use a stable reference for the initial generative query to prevent re-fetches
+  const queryRef = useRef(location.state?.query);
 
   useEffect(() => {
     let isMounted = true;
@@ -60,8 +64,12 @@ const Results = () => {
         }
       } catch (error) {
         if (isMounted) {
-          toast.error(error.response?.data?.message || 'Failed to generate itinerary. Please try again.');
-          setTimeout(() => navigate('/'), 2000);
+          if (id) {
+             setErrorMap('Trip not found or is private.');
+          } else {
+             toast.error(error.response?.data?.message || 'Failed to generate itinerary. Please try again.');
+             setTimeout(() => navigate('/'), 2000);
+          }
         }
       } finally {
         if (isMounted) setIsLoading(false);
@@ -73,10 +81,28 @@ const Results = () => {
     return () => {
       isMounted = false;
     };
-  }, [id, location.state, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id, navigate]); // Notice: no location.state, we use queryRef.current on initial mount
+
+  // If error loading shared trip, show error state instead of loader
+  if (errorMap) {
+    return (
+      <div className="min-h-[calc(100vh-64px)] bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-8 border border-slate-200 text-center max-w-sm w-full shadow-lg">
+          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FaExclamationTriangle className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">Trip Unavailable</h2>
+          <p className="text-slate-500 mb-6">{errorMap}</p>
+          <Link to="/" className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-6 rounded-xl transition-colors">
+            Plan a New Trip
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // If directly navigated without ID or state, redirect
-  if (!id && !location.state && !isLoading && !tripData) {
+  if (!id && !queryRef.current && !isLoading && !tripData) {
     return <Navigate to="/" />;
   }
 
