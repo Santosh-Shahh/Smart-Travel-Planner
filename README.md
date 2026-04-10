@@ -4,6 +4,8 @@
 
 **AI-powered travel planner that generates personalized itineraries in seconds.**
 
+🚀 **Live Demo:** [https://smart-travel-planner-app.vercel.app](https://smart-travel-planner-app.vercel.app)
+
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white)](https://react.dev/)
 [![Node.js](https://img.shields.io/badge/Node.js-Express-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
