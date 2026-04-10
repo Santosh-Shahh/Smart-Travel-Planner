@@ -300,15 +300,21 @@ const Results = () => {
                       {/* Global Vertical Line */}
                       <div className="absolute top-0 bottom-0 left-[24px] md:left-1/2 md:-translate-x-1/2 w-[3px] bg-gradient-to-b from-transparent via-slate-200 to-transparent z-0"></div>
                       
-                      {tripData.itinerary.days.map((day, idx) => (
-                        <ItineraryCard 
-                          key={day.day} 
-                          day={day} 
-                          destination={tripData.destination}
-                          totalDays={tripData.itinerary.totalDays || tripData.days}
-                          dayIndex={idx}
-                        />
-                      ))}
+                      {tripData.itinerary.days.map((day, idx) => {
+                        const globalStartIndex = tripData.itinerary.days
+                          .slice(0, idx)
+                          .reduce((sum, d) => sum + (d.activities?.length || 0), 0);
+                        
+                        return (
+                          <ItineraryCard 
+                            key={day.day} 
+                            day={day} 
+                            destination={tripData.destination}
+                            totalDays={tripData.itinerary.totalDays || tripData.days}
+                            globalStartIndex={globalStartIndex}
+                          />
+                        );
+                      })}
                     </div>
                   </motion.div>
                 )

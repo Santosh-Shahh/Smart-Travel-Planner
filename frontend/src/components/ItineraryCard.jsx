@@ -13,7 +13,7 @@ const ACTIVITY_TYPE_CONFIG = {
   nightlife: { icon: FaGlassMartini, color: 'text-purple-600', bg: 'bg-purple-50', label: 'Nightlife' },
 };
 
-const ItineraryCard = ({ day, destination, totalDays, dayIndex }) => {
+const ItineraryCard = ({ day, destination, totalDays, globalStartIndex = 0 }) => {
   return (
     <div className="relative w-full group/day mb-16 md:mb-24">
       {/* Centered Day Header */}
@@ -41,8 +41,9 @@ const ItineraryCard = ({ day, destination, totalDays, dayIndex }) => {
       {/* Activities Zigzag */}
       <div className="relative w-full flex flex-col space-y-12">
         {day.activities.map((activity, index) => {
-          // Alternating sides logic
-          const isLeft = index % 2 === 0;
+          // Alternating sides logic using global index
+          const globalIndex = globalStartIndex + index;
+          const isLeft = globalIndex % 2 === 0;
 
           // Build image query
           const queryParts = [activity.activity];
@@ -53,7 +54,9 @@ const ItineraryCard = ({ day, destination, totalDays, dayIndex }) => {
             queryParts.push(destination);
           }
           const fullQuery = queryParts.join(', ');
-          const imageIndex = parseInt(day.day) * 10 + index;
+          
+          // Use globalIndex instead of (day * 10 + index) which accidentally canceled out the modulo 5 cache math!
+          const imageIndex = globalIndex;
 
           const typeConfig = ACTIVITY_TYPE_CONFIG[activity.type] || ACTIVITY_TYPE_CONFIG.attraction;
           const TypeIcon = typeConfig?.icon || FaLandmark;
@@ -61,10 +64,10 @@ const ItineraryCard = ({ day, destination, totalDays, dayIndex }) => {
           return (
             <div key={index} className="relative w-full">
               
-              {/* Optional Logistics */}
-              {index > 0 && activity.travelFromPrevious && (
+              {/* Optional Logistics (Timeline Divider) */}
+              {(index > 0 || day.day > 1) && activity.travelFromPrevious && (
                 <div className="relative w-full flex mb-6 -mt-6 z-10 pl-[60px] md:pl-0 md:justify-center">
-                  <div className="absolute left-[24px] top-1/2 -translate-y-1/2 -translate-x-1/2 md:static md:translate-x-0 md:translate-y-0 h-full flex items-center bg-[#F8FAFC] rounded-full ring-2 ring-white">
+                  <div className="absolute left-[24px] top-1/2 -translate-y-1/2 -translate-x-1/2 md:static md:translate-x-0 md:translate-y-0 flex items-center bg-[#F8FAFC] rounded-full ring-4 ring-white shadow-sm overflow-hidden z-30">
                     <TravelLogistics travelFromPrevious={activity.travelFromPrevious} />
                   </div>
                 </div>
