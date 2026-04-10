@@ -7,7 +7,7 @@ const getGroq = () => {
   return _groq;
 };
 
-const MODEL = 'llama-3.3-70b-versatile';
+const MODEL = 'llama3-8b-8192';
 
 /**
  * Generate a day-wise travel itinerary using Groq (LLaMA 3.3 70B).

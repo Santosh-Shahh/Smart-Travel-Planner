@@ -291,17 +291,25 @@ const Results = () => {
                   <motion.div 
                     initial={{ opacity: 0 }} 
                     animate={{ opacity: 1 }}
-                    className="mt-4"
+                    className="mt-8"
                   >
-                    <h2 className="text-3xl font-extrabold text-slate-900 mb-8">Your Itinerary</h2>
-                    {tripData.itinerary.days.map((day) => (
-                      <ItineraryCard 
-                        key={day.day} 
-                        day={day} 
-                        destination={tripData.destination}
-                        totalDays={tripData.itinerary.totalDays || tripData.days}
-                      />
-                    ))}
+                    <h2 className="text-3xl font-extrabold text-slate-900 mb-12">Your Journey</h2>
+                    
+                    {/* Vertical Timeline Wrapper */}
+                    <div className="relative max-w-5xl mx-auto pb-12">
+                      {/* Global Vertical Line */}
+                      <div className="absolute top-0 bottom-0 left-[24px] md:left-1/2 md:-translate-x-1/2 w-[3px] bg-gradient-to-b from-transparent via-slate-200 to-transparent z-0"></div>
+                      
+                      {tripData.itinerary.days.map((day, idx) => (
+                        <ItineraryCard 
+                          key={day.day} 
+                          day={day} 
+                          destination={tripData.destination}
+                          totalDays={tripData.itinerary.totalDays || tripData.days}
+                          dayIndex={idx}
+                        />
+                      ))}
+                    </div>
                   </motion.div>
                 )
               ) : (

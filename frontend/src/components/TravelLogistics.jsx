@@ -21,15 +21,13 @@ const TravelLogistics = ({ travelFromPrevious }) => {
   const IconComp = config.icon;
 
   return (
-    <div className="flex items-center justify-center py-2 my-1">
-      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${config.bg} ${config.color} border ${config.border}`}>
-        <IconComp className="h-3 w-3" />
-        <span>{distance}</span>
-        <span className="text-slate-300">·</span>
-        <span>{duration}</span>
-        <span className="text-slate-300">·</span>
-        <span className="capitalize">{mode}</span>
-      </div>
+    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold ${config.bg} ${config.color} shadow-sm border border-black/5 hover:border-black/10 transition-colors bg-white`}>
+      <IconComp className="h-3 w-3" />
+      <span>{distance}</span>
+      <span className="text-slate-300">·</span>
+      <span>{duration}</span>
+      <span className="text-slate-300">·</span>
+      <span className="capitalize">{mode}</span>
     </div>
   );
 };
