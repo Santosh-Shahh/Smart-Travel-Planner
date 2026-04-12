@@ -70,7 +70,7 @@ const TripForm = () => {
         const res = await api.get(`/places/autocomplete?input=${encodeURIComponent(query)}`);
         
         if (Array.isArray(res.data) && res.data.length > 0) {
-          setSuggestions(res.data.map(item => item.description));
+          setSuggestions(res.data.map(item => item.description).slice(0, 5));
           setHighlightedIndex(-1);
         } else {
           setSuggestions([]);
@@ -236,29 +236,39 @@ const TripForm = () => {
                 </div>
               )}
               <AnimatePresence>
-                {activeField === 'from' && suggestions.length > 0 && (
+                {activeField === 'from' && (isSearching || suggestions.length > 0 || (from.trim().length >= 2 && !isSearching && suggestions.length === 0)) && (
                   <motion.ul
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute z-50 w-full mt-2 bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden py-2"
+                    className="absolute z-50 w-full mt-2 bg-white rounded-2xl shadow-xl overflow-hidden py-2"
+                    style={{ border: '0.5px solid #e2e8f0' }}
                   >
-                    {suggestions.map((suggestion, index) => (
-                      <li
-                        key={index}
-                        onClick={() => handleSelectSuggestion(suggestion)}
-                        onMouseEnter={() => setHighlightedIndex(index)}
-                        className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${
-                          highlightedIndex === index ? 'bg-primary-50/70' : 'hover:bg-slate-50'
-                        }`}
-                      >
-                        <FaPlaneDeparture className={`text-sm flex-shrink-0 ${highlightedIndex === index ? 'text-primary-500' : 'text-slate-400'}`} />
-                        <span className="text-slate-700 text-sm font-medium truncate">
-                          {renderHighlightedText(suggestion, from)}
-                        </span>
+                    {isSearching ? (
+                      <li className="px-4 py-3 flex items-center gap-3 text-slate-400">
+                        <div className="h-4 w-4 border-2 border-slate-300 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-sm">Searching...</span>
                       </li>
-                    ))}
+                    ) : suggestions.length > 0 ? (
+                      suggestions.map((suggestion, index) => (
+                        <li
+                          key={index}
+                          onClick={() => handleSelectSuggestion(suggestion)}
+                          onMouseEnter={() => setHighlightedIndex(index)}
+                          className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${
+                            highlightedIndex === index ? 'bg-primary-50/70' : 'hover:bg-slate-50'
+                          }`}
+                        >
+                          <FaPlaneDeparture className={`text-sm flex-shrink-0 ${highlightedIndex === index ? 'text-primary-500' : 'text-slate-400'}`} />
+                          <span className="text-slate-700 text-sm font-medium truncate">
+                            {renderHighlightedText(suggestion, from)}
+                          </span>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="px-4 py-3 text-slate-400 text-sm">No results found</li>
+                    )}
                   </motion.ul>
                 )}
               </AnimatePresence>
@@ -291,29 +301,39 @@ const TripForm = () => {
                 </div>
               )}
               <AnimatePresence>
-                {activeField === 'destination' && suggestions.length > 0 && (
+                {activeField === 'destination' && (isSearching || suggestions.length > 0 || (destination.trim().length >= 2 && !isSearching && suggestions.length === 0)) && (
                   <motion.ul
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute z-50 w-full mt-2 bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden py-2"
+                    className="absolute z-50 w-full mt-2 bg-white rounded-2xl shadow-xl overflow-hidden py-2"
+                    style={{ border: '0.5px solid #e2e8f0' }}
                   >
-                    {suggestions.map((suggestion, index) => (
-                      <li
-                        key={index}
-                        onClick={() => handleSelectSuggestion(suggestion)}
-                        onMouseEnter={() => setHighlightedIndex(index)}
-                        className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${
-                          highlightedIndex === index ? 'bg-primary-50/70' : 'hover:bg-slate-50'
-                        }`}
-                      >
-                        <FaMapMarkerAlt className={`text-sm flex-shrink-0 ${highlightedIndex === index ? 'text-primary-500' : 'text-slate-400'}`} />
-                        <span className="text-slate-700 text-sm font-medium truncate">
-                          {renderHighlightedText(suggestion, destination)}
-                        </span>
+                    {isSearching ? (
+                      <li className="px-4 py-3 flex items-center gap-3 text-slate-400">
+                        <div className="h-4 w-4 border-2 border-slate-300 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-sm">Searching...</span>
                       </li>
-                    ))}
+                    ) : suggestions.length > 0 ? (
+                      suggestions.map((suggestion, index) => (
+                        <li
+                          key={index}
+                          onClick={() => handleSelectSuggestion(suggestion)}
+                          onMouseEnter={() => setHighlightedIndex(index)}
+                          className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${
+                            highlightedIndex === index ? 'bg-primary-50/70' : 'hover:bg-slate-50'
+                          }`}
+                        >
+                          <FaMapMarkerAlt className={`text-sm flex-shrink-0 ${highlightedIndex === index ? 'text-primary-500' : 'text-slate-400'}`} />
+                          <span className="text-slate-700 text-sm font-medium truncate">
+                            {renderHighlightedText(suggestion, destination)}
+                          </span>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="px-4 py-3 text-slate-400 text-sm">No results found</li>
+                    )}
                   </motion.ul>
                 )}
               </AnimatePresence>
