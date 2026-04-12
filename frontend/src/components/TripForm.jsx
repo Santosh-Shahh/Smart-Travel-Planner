@@ -67,7 +67,8 @@ const TripForm = () => {
     setIsSearching(true);
     const fetchSuggestions = async () => {
       try {
-        const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&osm_tag=place:city&osm_tag=place:town&limit=5&lang=en`, {
+        const tags = ['city', 'town', 'village', 'country', 'state', 'island'].map(t => `osm_tag=place:${t}`).join('&');
+        const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&${tags}&limit=5&lang=en`, {
           headers: {
             'Accept-Language': 'en'
           }
@@ -77,10 +78,13 @@ const TripForm = () => {
         if (data && data.features && data.features.length > 0) {
           const formattedSuggestions = data.features.map(f => {
             const prop = f.properties;
-            let city = prop.name;
+            let mainName = prop.name;
             let state = prop.state || prop.county;
             let country = prop.country;
-            return [city, state, country].filter(Boolean).join(', ');
+            
+            // Deduplicate parts to avoid "Japan, Japan"
+            let parts = [mainName, state, country].filter(Boolean);
+            return [...new Set(parts)].join(', ');
           });
           // Remove duplicates
           setSuggestions([...new Set(formattedSuggestions)]);
