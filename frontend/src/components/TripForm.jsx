@@ -4,9 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaMapMarkerAlt, FaCalendarAlt, FaMoneyBillWave, FaLocationArrow, FaPlaneDeparture, FaUser, FaUsers, FaHeart, FaChild, FaUtensils, FaMountain, FaLandmark, FaGlassMartini, FaLeaf, FaShoppingBag } from 'react-icons/fa';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
-import { useLoadScript } from '@react-google-maps/api';
-
-const libraries = ['places'];
 
 const TRAVEL_TYPES = [
   { value: 'Solo', icon: FaUser, label: 'Solo' },
@@ -40,19 +37,6 @@ const TripForm = () => {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const formRef = useRef(null);
 
-  const [autocompleteService, setAutocompleteService] = useState(null);
-
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-    libraries,
-  });
-
-  useEffect(() => {
-    if (isLoaded && !autocompleteService && window.google) {
-      setAutocompleteService(new window.google.maps.places.AutocompleteService());
-    }
-  }, [isLoaded, autocompleteService]);
-
   const navigate = useNavigate();
 
   // Close dropdown on click outside
@@ -81,29 +65,38 @@ const TripForm = () => {
     }
 
     setIsSearching(true);
-    const fetchSuggestions = () => {
-      if (!autocompleteService) {
-        setIsSearching(false);
-        return;
-      }
-      
-      autocompleteService.getPlacePredictions(
-        { input: query, types: ['(cities)'] },
-        (predictions, status) => {
-          setIsSearching(false);
-          if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-            setSuggestions(predictions.map((p) => p.description).slice(0, 5));
-            setHighlightedIndex(-1);
-          } else {
-            setSuggestions([]);
+    const fetchSuggestions = async () => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&featuretype=city&limit=5`, {
+          headers: {
+            'Accept-Language': 'en'
           }
+        });
+        const data = await res.json();
+        
+        if (data && data.length > 0) {
+          const formattedSuggestions = data.map(item => {
+            let city = item.address.city || item.address.town || item.address.village || item.name;
+            let country = item.address.country;
+            return [city, country].filter(Boolean).join(', ');
+          });
+          // Remove duplicates
+          setSuggestions([...new Set(formattedSuggestions)]);
+          setHighlightedIndex(-1);
+        } else {
+          setSuggestions([]);
         }
-      );
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        setSuggestions([]);
+      } finally {
+        setIsSearching(false);
+      }
     };
 
     const debounceId = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(debounceId);
-  }, [from, destination, activeField, autocompleteService]);
+  }, [from, destination, activeField]);
 
   const handleKeyDown = (e) => {
     if (!activeField || suggestions.length === 0) return;
