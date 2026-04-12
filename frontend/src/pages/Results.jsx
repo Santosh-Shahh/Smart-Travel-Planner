@@ -29,6 +29,9 @@ const Results = () => {
   
   // Use a stable reference for the initial generative query to prevent re-fetches
   const queryRef = useRef(location.state?.query);
+  
+  // Unique trip session ID for image deduplication across all cards
+  const tripImageId = useRef(`trip_${Date.now()}_${Math.random().toString(36).substring(7)}`);
 
   useEffect(() => {
     let isMounted = true;
@@ -338,6 +341,7 @@ const Results = () => {
                             destination={tripData.destination}
                             totalDays={tripData.itinerary.totalDays || tripData.days}
                             globalStartIndex={globalStartIndex}
+                            tripId={tripImageId.current}
                           />
                         );
                       })}

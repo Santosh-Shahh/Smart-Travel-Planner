@@ -35,6 +35,38 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/trips', tripRoutes);
 
 const { getPlaceImagePhotoURL, autocompletePlaces } = require('./services/places');
+const { getActivityImage } = require('./services/imageEngine');
+
+// ─── New: Category-aware activity image endpoint ────────────────────────────
+app.get('/api/activity-image', async (req, res) => {
+  try {
+    const { activity, city, country, category, time, tripId, index, location, transportMode } = req.query;
+    if (!activity && !city) {
+      return res.status(400).json({ message: 'At least activity or city is required' });
+    }
+
+    const travelFromPrevious = transportMode ? { mode: transportMode } : null;
+
+    const result = await getActivityImage({
+      activity: activity || '',
+      city: city || '',
+      country: country || '',
+      category: category || 'attraction',
+      time: time || '',
+      tripId: tripId || '',
+      index: parseInt(index) || 0,
+      location: location || '',
+      travelFromPrevious,
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Activity image route error:', error.message);
+    res.status(500).json({ message: 'Failed to fetch activity image' });
+  }
+});
+
+// ─── Legacy: Place image endpoint (kept for backward compatibility) ─────────
 app.get('/api/place-image', async (req, res) => {
   try {
     const { query, index } = req.query;
@@ -42,7 +74,6 @@ app.get('/api/place-image', async (req, res) => {
       return res.status(400).json({ message: 'Query parameter is required' });
     }
     
-    // Pass query, referer, and index
     const referer = req.headers.referer || 'http://localhost:5173/';
     const imageUrl = await getPlaceImagePhotoURL(query, referer, index);
     if (!imageUrl) {

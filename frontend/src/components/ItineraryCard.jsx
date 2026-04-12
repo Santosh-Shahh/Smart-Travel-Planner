@@ -1,7 +1,8 @@
 import { FaMapMarkerAlt, FaClock, FaMoneyBillWave, FaLandmark, FaUtensils, FaPlane, FaHotel, FaLeaf, FaShoppingBag, FaGlassMartini, FaExternalLinkAlt } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import PlaceImage from './PlaceImage';
+import ActivityImage from './ActivityImage';
 import TravelLogistics from './TravelLogistics';
+import { useMemo } from 'react';
 
 const ACTIVITY_TYPE_CONFIG = {
   attraction: { icon: FaLandmark, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Attraction' },
@@ -13,7 +14,20 @@ const ACTIVITY_TYPE_CONFIG = {
   nightlife: { icon: FaGlassMartini, color: 'text-purple-600', bg: 'bg-purple-50', label: 'Nightlife' },
 };
 
-const ItineraryCard = ({ day, destination, totalDays, globalStartIndex = 0 }) => {
+const ItineraryCard = ({ day, destination, totalDays, globalStartIndex = 0, tripId = '' }) => {
+  // Parse country from destination (e.g. "Tokyo, Japan" → "Japan")
+  const country = useMemo(() => {
+    if (!destination) return '';
+    const parts = destination.split(',').map(p => p.trim());
+    return parts.length > 1 ? parts[parts.length - 1] : '';
+  }, [destination]);
+
+  // Extract city name (first part of destination)
+  const city = useMemo(() => {
+    if (!destination) return '';
+    return destination.split(',')[0].trim();
+  }, [destination]);
+
   return (
     <div className="relative w-full group/day mb-16 md:mb-24">
       {/* Centered Day Header */}
@@ -45,17 +59,7 @@ const ItineraryCard = ({ day, destination, totalDays, globalStartIndex = 0 }) =>
           const globalIndex = globalStartIndex + index;
           const isLeft = globalIndex % 2 === 0;
 
-          // Build image query
-          const queryParts = [activity.activity];
-          if (activity.location && !activity.activity.toLowerCase().includes(activity.location.toLowerCase())) {
-            queryParts.push(activity.location);
-          }
-          if (destination && !queryParts.some(p => p.toLowerCase().includes(destination.toLowerCase()))) {
-            queryParts.push(destination);
-          }
-          const fullQuery = queryParts.join(', ');
-          
-          // Use globalIndex instead of (day * 10 + index) which accidentally canceled out the modulo 5 cache math!
+          // Image index for variety
           const imageIndex = globalIndex;
 
           const typeConfig = ACTIVITY_TYPE_CONFIG[activity.type] || ACTIVITY_TYPE_CONFIG.attraction;
@@ -96,7 +100,17 @@ const ItineraryCard = ({ day, destination, totalDays, globalStartIndex = 0 }) =>
                         {/* Premium 16:9 Featured Image */}
                         <div className="relative aspect-[16/9] w-full overflow-hidden shrink-0 bg-slate-100">
                           <div className="absolute inset-0 group-hover/card:scale-105 transition-transform duration-700 ease-out pointer-events-none">
-                            <PlaceImage locationName={fullQuery} imageIndex={imageIndex} />
+                            <ActivityImage
+                              activity={activity.activity}
+                              city={city}
+                              country={country}
+                              category={activity.type}
+                              time={activity.time}
+                              tripId={tripId}
+                              index={imageIndex}
+                              location={activity.location}
+                              transportMode={activity.travelFromPrevious?.mode || ''}
+                            />
                           </div>
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent pointer-events-none" />
                           
