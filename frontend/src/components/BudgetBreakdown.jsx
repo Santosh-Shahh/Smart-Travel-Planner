@@ -42,8 +42,8 @@ const BudgetBreakdown = ({ itinerary, totalDays }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
         {/* Pie Chart */}
         <div className="flex flex-col items-center">
-          <div className="w-48 h-48 relative" style={{ minWidth: 192, minHeight: 192 }}>
-            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+          <div className="w-48 h-48 relative">
+            <ResponsiveContainer width={192} height={192}>
               <PieChart>
                 <Pie
                   data={chartData}
