@@ -67,18 +67,20 @@ const TripForm = () => {
     setIsSearching(true);
     const fetchSuggestions = async () => {
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&featuretype=city&limit=5`, {
+        const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&osm_tag=place:city&osm_tag=place:town&limit=5&lang=en`, {
           headers: {
             'Accept-Language': 'en'
           }
         });
         const data = await res.json();
         
-        if (data && data.length > 0) {
-          const formattedSuggestions = data.map(item => {
-            let city = item.address.city || item.address.town || item.address.village || item.name;
-            let country = item.address.country;
-            return [city, country].filter(Boolean).join(', ');
+        if (data && data.features && data.features.length > 0) {
+          const formattedSuggestions = data.features.map(f => {
+            const prop = f.properties;
+            let city = prop.name;
+            let state = prop.state || prop.county;
+            let country = prop.country;
+            return [city, state, country].filter(Boolean).join(', ');
           });
           // Remove duplicates
           setSuggestions([...new Set(formattedSuggestions)]);
@@ -94,7 +96,7 @@ const TripForm = () => {
       }
     };
 
-    const debounceId = setTimeout(fetchSuggestions, 300);
+    const debounceId = setTimeout(fetchSuggestions, 250);
     return () => clearTimeout(debounceId);
   }, [from, destination, activeField]);
 
@@ -278,7 +280,7 @@ const TripForm = () => {
                         </li>
                       ))
                     ) : (
-                      <li className="px-4 py-3 text-slate-400 text-sm">No results found</li>
+                      <li className="px-4 py-3 text-slate-400 text-sm">No matching places found</li>
                     )}
                   </motion.ul>
                 )}
@@ -343,7 +345,7 @@ const TripForm = () => {
                         </li>
                       ))
                     ) : (
-                      <li className="px-4 py-3 text-slate-400 text-sm">No results found</li>
+                      <li className="px-4 py-3 text-slate-400 text-sm">No matching places found</li>
                     )}
                   </motion.ul>
                 )}
