@@ -233,6 +233,42 @@ const getCategoryFallback = (category, activity, index = 0) => {
   return fallbacks[hash % fallbacks.length];
 };
 
+// ─── Free API Image Fetchers ──────────────────────────────────────────────────
+
+/**
+ * Search Wikipedia for a landmark image.
+ * Requires no API key and provides excellent real-world landmark photos.
+ * @param {string} query
+ * @returns {Promise<string|null>}
+ */
+const searchWikipediaImage = async (query) => {
+  try {
+    const res = await axios.get(`https://en.wikipedia.org/w/api.php`, {
+      params: {
+        action: 'query',
+        generator: 'search',
+        gsrsearch: query,
+        gsrlimit: 1,
+        prop: 'pageimages',
+        pithumbsize: 800,
+        format: 'json'
+      },
+      timeout: 4000
+    });
+    
+    const pages = res.data?.query?.pages;
+    if (pages) {
+      const firstPage = Object.values(pages)[0];
+      if (firstPage && firstPage.thumbnail && firstPage.thumbnail.source) {
+        return firstPage.thumbnail.source;
+      }
+    }
+  } catch (err) {
+    console.error('Wikipedia image search failed for:', query);
+  }
+  return null;
+}
+
 // ─── Main Image Fetcher ─────────────────────────────────────────────────────
 
 /**
@@ -269,43 +305,59 @@ const getActivityImage = async ({
   const usedSet = getUsedSet(tripId);
   const smartQuery = buildSmartQuery(activity, city, country, category, time, travelFromPrevious);
 
-  // ── Source 1: Unsplash API ──────────────────────────────────────────────
+  // ── Source 1: Unsplash API (Will skip if key misses) ───────────────────
   const unsplashResults = await searchUnsplash(smartQuery);
   if (unsplashResults && unsplashResults.length > 0) {
-    // Pick the first unused image
     for (const result of unsplashResults) {
       if (!usedSet.has(result.id)) {
         usedSet.add(result.id);
         return { imageUrl: result.url, source: 'unsplash' };
       }
     }
-    // If all are used (unlikely with 15 results), pick by index to still avoid adjacent dupes
     const fallbackResult = unsplashResults[index % unsplashResults.length];
     return { imageUrl: fallbackResult.url, source: 'unsplash' };
   }
 
-  // ── Source 2: Google Places (for landmarks with specific names) ────────
+  // ── Source 2: Wikipedia (Incredible free resolver for Landmarks) ────────
+  if (category === 'attraction' || category === 'nature' || category === 'landmark' || category === 'stay' || category === 'food') {
+    const wikiQuery = location || `${activity} ${city || ''}`.trim();
+    const wikiUrl = await searchWikipediaImage(wikiQuery);
+    if (wikiUrl) {
+      const wikiId = `wiki_${simpleHash(wikiUrl)}`;
+      if (!usedSet.has(wikiId)) {
+        usedSet.add(wikiId);
+        return { imageUrl: wikiUrl, source: 'wikipedia' };
+      }
+      return { imageUrl: wikiUrl, source: 'wikipedia' };
+    }
+  }
+
+  // ── Source 3: Google Places (Will skip if billing disables) ─────────────
   try {
-    // Build a focused query for Google Places
     const placesQuery = location || `${activity}, ${city}`;
-    const referer = 'http://localhost:5173/';
-    const photoUrl = await getPlaceImagePhotoURL(placesQuery, referer, index);
+    const photoUrl = await getPlaceImagePhotoURL(placesQuery, 'http://localhost:5173/', index);
     if (photoUrl) {
       const placesId = `gp_${simpleHash(placesQuery)}_${index}`;
       if (!usedSet.has(placesId)) {
         usedSet.add(placesId);
         return { imageUrl: photoUrl, source: 'google_places' };
       }
-      // Even if duplicate, return it if nothing else is available
       return { imageUrl: photoUrl, source: 'google_places' };
     }
   } catch (err) {
     console.error('Google Places fallback error:', err.message);
   }
 
-  // ── Source 3: Category-specific curated fallback ───────────────────────
-  const fallbackUrl = getCategoryFallback(category, activity, index);
-  return { imageUrl: fallbackUrl, source: 'fallback' };
+  // ── Source 4: Dynamic LoremFlickr (Guarantees zero repeats) ─────────────
+  // Limits to 3 broad keywords to improve matching. Locks the seed for determinism.
+  const keywords = Array.from(new Set(smartQuery.split(' ')))
+    .filter(k => k.length > 3)
+    .slice(0, 3)
+    .join(',');
+  const lockId = simpleHash(activity + city) + index;
+  const loremUrl = `https://loremflickr.com/800/600/${encodeURIComponent(keywords)}?lock=${lockId}`;
+  
+  return { imageUrl: loremUrl, source: 'loremflickr' };
 };
 
 module.exports = {
