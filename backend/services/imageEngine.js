@@ -151,10 +151,6 @@ const searchUnsplash = async (query, perPage = 15) => {
         per_page: perPage,
         orientation: 'landscape',
       },
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-        'Accept': 'application/json'
-      },
       timeout: 8000,
     });
 
