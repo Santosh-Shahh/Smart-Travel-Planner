@@ -70,8 +70,9 @@ const Results = () => {
           if (id) {
              setErrorMap('Trip not found or is private.');
           } else {
-             toast.error(error.response?.data?.message || 'Failed to generate itinerary. Please try again.');
-             setTimeout(() => navigate('/'), 2000);
+             const actualError = error.response?.data?.error || error.response?.data?.message || 'Failed to generate itinerary. Please try again.';
+             toast.error(actualError);
+             setTimeout(() => navigate('/'), 3000);
           }
         }
       } finally {
