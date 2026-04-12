@@ -139,24 +139,21 @@ const simpleHash = (str) => {
  * @returns {Array} Array of image result objects
  */
 const searchUnsplash = async (query, perPage = 15) => {
-  const accessKey = process.env.UNSPLASH_ACCESS_KEY;
-  if (!accessKey) return null; // No key configured, skip Unsplash
-
   const cacheKey = query.trim().toLowerCase();
   if (unsplashCache.has(cacheKey)) {
     return unsplashCache.get(cacheKey);
   }
 
   try {
-    const response = await axios.get('https://api.unsplash.com/search/photos', {
+    const response = await axios.get('https://unsplash.com/napi/search/photos', {
       params: {
         query,
         per_page: perPage,
         orientation: 'landscape',
-        content_filter: 'high', // Only high-quality, safe content
       },
       headers: {
-        'Authorization': `Client-ID ${accessKey}`,
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+        'Accept': 'application/json'
       },
       timeout: 8000,
     });
@@ -171,7 +168,7 @@ const searchUnsplash = async (query, perPage = 15) => {
     unsplashCache.set(cacheKey, results);
     return results;
   } catch (error) {
-    console.error(`Unsplash search error for "${query}":`, error.response?.status || error.message);
+    console.error(`Unsplash NAPI search error for "${query}":`, error.message);
     return null;
   }
 };
