@@ -33,7 +33,9 @@ const Home = () => {
           <TripForm />
         </div>
 
-        <SampleTrips />
+        <div className="mb-32 relative z-10 bg-white shadow-xl shadow-slate-200/50 rounded-3xl py-10 my-10 border border-slate-100/50">
+          <SampleTrips />
+        </div>
 
         {/* Feature Highlights */}
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">

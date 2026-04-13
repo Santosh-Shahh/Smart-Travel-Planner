@@ -1,157 +1,151 @@
-import React, { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaClock, FaMapMarkerAlt, FaMoneyBillWave, FaChevronDown, FaChevronUp, FaPlaneDeparture } from 'react-icons/fa';
+import { FaCalendarAlt, FaUser, FaMoneyBillWave, FaMapMarkerAlt, FaChevronDown } from 'react-icons/fa';
 
 const sampleTrips = [
   {
-    id: 'kathmandu',
-    destination: 'Kathmandu, Nepal',
+    id: 1,
+    city: 'Kathmandu',
     country: 'Nepal',
     days: 5,
+    travelType: 'Solo',
     budget: 'Luxury',
-    travelType: 'Couple',
-    estCost: '$1,200',
-    stops: 15,
-    color: 'bg-emerald-500',
-    accent: 'text-emerald-600',
-    bgLight: 'bg-emerald-50',
+    cost: '$1,200',
+    color: 'from-orange-400 to-red-600',
+    coverImage: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&q=80&w=800',
     itinerary: [
       {
         day: 1,
-        title: 'Arrival & Thamel Exploration',
-        activities: [
-          'Arrive at Tribhuvan International Airport; private transfer to your luxury boutique hotel.',
-          'Stroll through the vibrant streets of Thamel, exploring hidden courtyards and artisan shops.',
-          'Enjoy a traditional welcome dinner with cultural performances at Krishnarpan.'
+        theme: 'Arrival & Royal Heritage',
+        stops: [
+          { time: '10:00 AM', title: 'Check in at Dwarika\'s Hotel', desc: 'Settle into your premium heritage suite.' },
+          { time: '01:00 PM', title: 'Kathmandu Durbar Square', desc: 'Explore the ancient royal palace complex and temples.' },
+          { time: '06:00 PM', title: 'Dinner at Krishnarpan', desc: 'Experience a traditional luxury Newari feast.' }
         ]
       },
       {
         day: 2,
-        title: 'Spiritual Heritage',
-        activities: [
-          'Early morning visit to Swayambhunath (Monkey Temple) for panoramic city views.',
-          'Explore Kathmandu Durbar Square and witness the living goddess, Kumari.',
-          'Sunset visit to Boudhanath Stupa, joining pilgrims in lighting butter lamps.'
+        theme: 'Spiritual Awakening',
+        stops: [
+          { time: '09:00 AM', title: 'Swayambhunath Stupa', desc: 'Climb the steps to the Monkey Temple for city views.' },
+          { time: '01:00 PM', title: 'Patan Durbar Square', desc: 'Discover fine arts and architecture in the city of beauty.' },
+          { time: '05:00 PM', title: 'Pashupatinath Aarti', desc: 'Witness the mesmerizing evening river ritual.' }
         ]
       },
       {
         day: 3,
-        title: 'Patan City of Arts',
-        activities: [
-          'Drive to Patan to admire the exquisite Newari architecture in Patan Durbar Square.',
-          'Visit the Golden Temple and the Patan Museum.',
-          'Fine dining experience at a restored palace courtyard restaurant.'
+        theme: 'Himalayan Sunrise',
+        stops: [
+          { time: '05:30 AM', title: 'Helicopter to Everest Base Camp', desc: 'An exclusive champagne breakfast at the top of the world.' },
+          { time: '02:00 PM', title: 'Spa & Wellness', desc: 'Relax with a deep tissue Himalayan massage.' },
+          { time: '07:00 PM', title: 'Boudhanath Stupa Walk', desc: 'Evening kora around the illuminated giant stupa.' }
         ]
       },
       {
         day: 4,
-        title: 'Bhaktapur Excursion',
-        activities: [
-          'Day trip to Bhaktapur, interacting with local potters directly in Pottery Square.',
-          'Sample famous Juju Dhau (King Curd) while admiring the 55-Window Palace.',
-          'Return to Kathmandu for a relaxing couple\'s spa treatment.'
+        theme: 'Art & Culture',
+        stops: [
+          { time: '10:00 AM', title: 'Bhaktapur Ancient City', desc: 'Stroll through timeless brick streets and pottery squares.' },
+          { time: '01:30 PM', title: 'Lunch at Juju Dhau', desc: 'Taste the famous "King of Yogurt".' },
+          { time: '04:00 PM', title: 'Thangka Painting Class', desc: 'Private workshop with a master artisan.' }
         ]
       },
       {
         day: 5,
-        title: 'Himalayan Flight & Departure',
-        activities: [
-          'Early morning Mount Everest scenic flight experience.',
-          'Leisurely luxury brunch back at the hotel.',
-          'Private transfer to the airport for luxurious departure.'
+        theme: 'Departure',
+        stops: [
+          { time: '09:00 AM', title: 'Garden of Dreams', desc: 'Morning coffee in a neo-classical historical garden.' },
+          { time: '12:00 PM', title: 'Thamel Shopping', desc: 'Pick up pashminas and luxury crafts.' },
+          { time: '03:00 PM', title: 'Airport Transfer', desc: 'Private chauffeur back to TIA.' }
         ]
       }
     ]
   },
   {
-    id: 'manali',
-    destination: 'Manali, India',
+    id: 2,
+    city: 'Manali',
     country: 'India',
     days: 3,
+    travelType: 'Couple',
     budget: 'Budget',
-    travelType: 'Friends',
-    estCost: '$250',
-    stops: 9,
-    color: 'bg-blue-500',
-    accent: 'text-blue-600',
-    bgLight: 'bg-blue-50',
+    cost: '$150',
+    color: 'from-emerald-400 to-teal-600',
+    coverImage: 'https://images.unsplash.com/photo-1626621341517-bbf3e99c0b2c?auto=format&fit=crop&q=80&w=800',
     itinerary: [
       {
         day: 1,
-        title: 'Old Manali Vibes',
-        activities: [
-          'Check into a cozy backpacker hostel in Old Manali.',
-          'Hike to the ancient Hadimba Devi Temple surrounded by cedar forests.',
-          'Café hopping with friends, enjoying live music and momos in the vibrant market.'
+        theme: 'Old Manali Charm',
+        stops: [
+          { time: '11:00 AM', title: 'Hadimba Temple', desc: 'Visit the peaceful wooden temple amidst the cedar forest.' },
+          { time: '02:00 PM', title: 'Cafe Hopping', desc: 'Enjoy cheap eats and live music in Old Manali.' },
+          { time: '06:00 PM', title: 'Mall Road Stroll', desc: 'Evening walk and local street food.' }
         ]
       },
       {
         day: 2,
-        title: 'Solang Valley Adventure',
-        activities: [
-          'Early morning bus ride up to Solang Valley.',
-          'Group paragliding and zorbing down the grass slopes.',
-          'Return to Mall Road for street food and souvenir shopping by the river.'
+        theme: 'Snow & Adventure',
+        stops: [
+          { time: '08:00 AM', title: 'Solang Valley', desc: 'Budget-friendly snow activities and paragliding.' },
+          { time: '01:00 PM', title: 'Maggi Point', desc: 'Classic hot noodles overlooking the mountains.' },
+          { time: '04:00 PM', title: 'Vashisht Hot Springs', desc: 'Relax in the natural public hot water baths.' }
         ]
       },
       {
         day: 3,
-        title: 'Vashisht Hot Springs & Trek',
-        activities: [
-          'Trek from Old Manali to Vashisht Village.',
-          'Relieve your muscles in the natural thermal hot springs.',
-          'Hike further up to the stunning Jogini Waterfall before heading home.'
+        theme: 'Riverside Romance',
+        stops: [
+          { time: '09:00 AM', title: 'Jogini Waterfall Trek', desc: 'A scenic, free hike to a stunning waterfall.' },
+          { time: '01:00 PM', title: 'Picnic by Beas River', desc: 'Pack lunch and sit by the rushing river waters.' },
+          { time: '04:00 PM', title: 'Departure Bus', desc: 'Catch the Volvo bus back down the mountains.' }
         ]
       }
     ]
   },
   {
-    id: 'tokyo',
-    destination: 'Tokyo, Japan',
+    id: 3,
+    city: 'Tokyo',
     country: 'Japan',
     days: 4,
+    travelType: 'Friends',
     budget: 'Moderate',
-    travelType: 'Solo',
-    estCost: '$850',
-    stops: 12,
-    color: 'bg-purple-500',
-    accent: 'text-purple-600',
-    bgLight: 'bg-purple-50',
+    cost: '$850',
+    color: 'from-fuchsia-500 to-purple-700',
+    coverImage: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80&w=800',
     itinerary: [
       {
         day: 1,
-        title: 'Shinjuku & Shibuya',
-        activities: [
-          'Navigate the vibrant chaos of the Shibuya Crossing and Hachiko Statue.',
-          'Explore the serene Meiji Shrine nestled quietly inside a massive urban forest.',
-          'Experience the neon nightlife and micro-bars of Golden Gai in Shinjuku.'
+        theme: 'Neon & Culture',
+        stops: [
+          { time: '10:00 AM', title: 'Senso-ji Temple', desc: 'Explore Asakusa and grab traditional snacks.' },
+          { time: '02:00 PM', title: 'Akihabara', desc: 'Arcades, anime, and electronics with the group.' },
+          { time: '07:00 PM', title: 'Shinjuku Omoide Yokocho', desc: 'Dinner and drinks in the famous alleyway.' }
         ]
       },
       {
         day: 2,
-        title: 'Tradition & Tech',
-        activities: [
-          'Morning visit to Senso-ji Temple in Asakusa, browsing Nakamise shopping street.',
-          'Cruise down the Sumida River to Odaiba.',
-          'Explore digital art installations and futuristic architecture at teamLab.'
+        theme: 'Pop Culture & Views',
+        stops: [
+          { time: '11:00 AM', title: 'Harajuku Takeshita Street', desc: 'Crepes, fashion, and people watching.' },
+          { time: '03:00 PM', title: 'Shibuya Crossing', desc: 'Experience the world\'s busiest pedestrian intersection.' },
+          { time: '08:00 PM', title: 'Shibuya Sky', desc: 'Stunning night views of the entire metropolis.' }
         ]
       },
       {
         day: 3,
-        title: 'Geek Culture & Markets',
-        activities: [
-          'Wander through Akihabara, exploring endless anime shops and arcades.',
-          'Lunch sushi run near the outer Tsukiji market.',
-          'High-end window shopping and architecture admiring in Ginza.'
+        theme: 'Food & History',
+        stops: [
+          { time: '09:00 AM', title: 'Tsukiji Outer Market', desc: 'Fresh sushi breakfast and seafood street eats.' },
+          { time: '01:00 PM', title: 'Meiji Shrine', desc: 'A peaceful walk through the massive forested shrine.' },
+          { time: '06:00 PM', title: 'Roppongi Izakaya', desc: 'Endless plates and drinks at a local pub.' }
         ]
       },
       {
         day: 4,
-        title: 'Parks & Viewpoints',
-        activities: [
-          'Stroll around the Imperial Palace East Gardens.',
-          'Ascend the Tokyo Skytree for a breathtaking solo panorama of the metropolitan sprawl.',
-          'Final ramen bowl at a famous local standing ramen shop before departure.'
+        theme: 'Bay Area Fun',
+        stops: [
+          { time: '10:00 AM', title: 'TeamLab Planets', desc: 'Immersive interactive digital art museum.' },
+          { time: '01:30 PM', title: 'Odaiba Seaside Park', desc: 'Views of the Rainbow Bridge and Statue of Liberty.' },
+          { time: '05:00 PM', title: 'Haneda Airport', desc: 'Last minute souvenir shopping and departure.' }
         ]
       }
     ]
@@ -160,78 +154,91 @@ const sampleTrips = [
 
 const SampleTrips = () => {
   const [expandedId, setExpandedId] = useState(null);
+  const containerRef = useRef(null);
 
-  const handleUseTemplate = (trip) => {
-    window.dispatchEvent(
-      new CustomEvent('fillTripTemplate', {
-        detail: {
-          destination: trip.destination,
-          days: trip.days,
-          budget: trip.budget,
-          travelType: trip.travelType
-        }
-      })
-    );
+  const handleToggle = (id) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+    } else {
+      setExpandedId(id);
+      // Wait for layout to shift then scroll down slightly
+      setTimeout(() => {
+        const topOffset = containerRef.current?.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo({ top: topOffset - 100, behavior: 'smooth' });
+      }, 150);
+    }
   };
 
-  const getExpandedTrip = () => sampleTrips.find(t => t.id === expandedId);
+  const handleUseTemplate = (trip) => {
+    const event = new CustomEvent('fill-trip-form', {
+      detail: {
+        destination: `${trip.city}, ${trip.country}`,
+        days: trip.days,
+        budget: trip.budget,
+        travelType: trip.travelType
+      }
+    });
+    window.dispatchEvent(event);
+  };
+
+  const expandedTrip = sampleTrips.find(t => t.id === expandedId);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-24 relative z-10">
+    <section className="w-full max-w-6xl mx-auto px-4 py-8" ref={containerRef}>
       <div className="text-center mb-10">
-        <h2 className="text-3xl font-bold text-slate-900 mb-4">Popular itineraries &mdash; click to explore</h2>
-        <p className="text-slate-500">Not sure where to start? Check out these AI-curated sample journeys.</p>
+        <h2 className="text-3xl font-bold text-slate-900 mb-3">Popular itineraries &mdash; click to explore</h2>
+        <p className="text-slate-500">Not sure where to start? Check out these community favorites.</p>
       </div>
 
-      {/* Cards Grid */}
-      <div className="grid md:grid-cols-3 gap-6 mb-8">
+      <div className="grid md:grid-cols-3 gap-6">
         {sampleTrips.map((trip) => {
           const isExpanded = expandedId === trip.id;
+          const totalStops = trip.itinerary.reduce((sum, day) => sum + day.stops.length, 0);
+
           return (
             <motion.div
+              layout
               key={trip.id}
-              whileHover={{ y: -5 }}
-              onClick={() => setExpandedId(isExpanded ? null : trip.id)}
-              className={`bg-white rounded-2xl border-[0.5px] cursor-pointer overflow-hidden transition-all duration-300 ${isExpanded ? `ring-2 ring-${trip.color.replace('bg-', '')} border-transparent` : 'border-slate-200 hover:border-slate-300 hover:shadow-lg'}`}
+              onClick={() => handleToggle(trip.id)}
+              className={`bg-white rounded-2xl border ${isExpanded ? 'border-primary-500 ring-2 ring-primary-100 shadow-xl' : 'border-slate-200 shadow-sm'} overflow-hidden cursor-pointer transition-all hover:shadow-md h-full flex flex-col`}
             >
-              <div className={`h-2 ${trip.color}`} />
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-900">{trip.destination.split(',')[0]}</h3>
-                    <p className="text-sm text-slate-500">{trip.country}</p>
-                  </div>
-                  <div className={`p-2 rounded-full ${trip.bgLight} ${trip.accent}`}>
-                    <FaPlaneDeparture />
-                  </div>
+              {/* Cover Image/Gradient area */}
+              <div className={`h-32 bg-gradient-to-r ${trip.color} relative overflow-hidden`}>
+                <img src={trip.coverImage} alt={trip.city} className="w-full h-full object-cover opacity-50 mix-blend-overlay" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+                  <h3 className="text-2xl font-bold text-white flex items-center">
+                    <FaMapMarkerAlt className="mr-2 text-white/80 text-lg" />
+                    {trip.city}, {trip.country}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="p-5 flex-grow">
+                {/* Badges */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
+                    <FaCalendarAlt className="text-primary-500" /> {trip.days} Days
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
+                    <FaUser className="text-secondary-500" /> {trip.travelType}
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
+                    <FaMoneyBillWave className="text-emerald-500" /> {trip.budget}
+                  </span>
                 </div>
 
-                <div className="flex flex-wrap gap-2 mb-6">
-                  <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-md">{trip.travelType}</span>
-                  <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-md">{trip.budget} Budget</span>
+                <div className="flex justify-between items-center text-sm text-slate-500 mb-2">
+                  <span>{totalStops} planned stops</span>
+                  <span className="font-semibold text-slate-700">Est. {trip.cost}</span>
                 </div>
-
-                <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-4 mb-4">
-                  <div className="text-center">
-                    <p className="text-xs text-slate-400 mb-1 flex items-center justify-center gap-1"><FaClock /> Days</p>
-                    <p className="font-semibold text-slate-700">{trip.days}</p>
-                  </div>
-                  <div className="text-center border-x border-slate-100">
-                    <p className="text-xs text-slate-400 mb-1 flex items-center justify-center gap-1"><FaMapMarkerAlt /> Stops</p>
-                    <p className="font-semibold text-slate-700">{trip.stops}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-slate-400 mb-1 flex items-center justify-center gap-1"><FaMoneyBillWave /> Est.</p>
-                    <p className="font-semibold text-slate-700">{trip.estCost}</p>
-                  </div>
-                </div>
-
-                <div className="flex justify-center items-center pt-2 text-primary-500 text-sm font-medium">
-                  {isExpanded ? (
-                    <><span className="mr-2">Close Details</span><FaChevronUp /></>
-                  ) : (
-                    <><span className="mr-2">View Itinerary</span><FaChevronDown /></>
-                  )}
+                
+                <div className="w-full flex justify-center mt-4">
+                  <motion.div
+                    animate={{ rotate: isExpanded ? 180 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <FaChevronDown className={`text-slate-400 ${isExpanded ? 'text-primary-500' : ''}`} />
+                  </motion.div>
                 </div>
               </div>
             </motion.div>
@@ -239,65 +246,64 @@ const SampleTrips = () => {
         })}
       </div>
 
-      {/* Expandable Itinerary Panel */}
       <AnimatePresence>
-        {expandedId && (
+        {expandedTrip && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
+            initial={{ opacity: 0, height: 0, marginTop: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginTop: '2rem' }}
+            exit={{ opacity: 0, height: 0, marginTop: 0 }}
             className="overflow-hidden"
           >
-            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-              <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
+            <div className="bg-white rounded-3xl border border-primary-100 shadow-2xl p-6 md:p-10 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 -translate-y-1/2 translate-x-1/3"></div>
+              
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 pb-6 border-b border-slate-100 relative z-10">
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-900">{getExpandedTrip().destination}</h3>
-                  <p className="text-slate-500">{getExpandedTrip().days} Days &bull; {getExpandedTrip().travelType} &bull; {getExpandedTrip().budget}</p>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-1">{expandedTrip.city} Itinerary</h3>
+                  <p className="text-slate-500">{expandedTrip.days} Days &bull; {expandedTrip.travelType} &bull; {expandedTrip.budget}</p>
                 </div>
-                <button
-                  onClick={() => setExpandedId(null)}
-                  className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
-                >
-                  <FaChevronUp />
-                </button>
+                <div className="mt-4 md:mt-0 flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="text-sm text-slate-500">Est. Total Cost</p>
+                    <p className="text-2xl font-bold text-slate-900">{expandedTrip.cost}</p>
+                  </div>
+                  <button
+                    onClick={() => handleUseTemplate(expandedTrip)}
+                    className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-medium shadow-sm shadow-primary-500/30 transition-all hover:-translate-y-0.5 active:translate-y-0 relative z-10"
+                  >
+                    Use this template
+                  </button>
+                </div>
               </div>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                {getExpandedTrip().itinerary.map((dayPlan) => (
-                  <div key={dayPlan.day} className="bg-slate-50 rounded-2xl p-5 border border-slate-100 relative">
-                    <div className={`absolute top-0 left-0 w-2 h-full rounded-l-2xl ${getExpandedTrip().color}`} />
-                    <h4 className="font-bold text-slate-800 mb-1 pl-2">Day {dayPlan.day}</h4>
-                    <p className="text-sm font-medium text-slate-500 mb-4 pl-2">{dayPlan.title}</p>
-                    <ul className="space-y-3 pl-2">
-                      {dayPlan.activities.map((act, i) => (
-                        <li key={i} className="flex gap-3 text-sm text-slate-600">
-                          <span className={`${getExpandedTrip().accent} font-bold mt-0.5`}>&bull;</span>
-                          <span>{act}</span>
-                        </li>
+              <div className="space-y-12 relative z-10">
+                {expandedTrip.itinerary.map((dayData, index) => (
+                  <div key={index} className="relative">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="flex-shrink-0 w-12 h-12 bg-primary-50 text-primary-600 rounded-2xl flex items-center justify-center font-bold text-lg border border-primary-100 shadow-sm">
+                        D{dayData.day}
+                      </div>
+                      <h4 className="text-xl font-bold text-slate-800">{dayData.theme}</h4>
+                    </div>
+
+                    <div className="ml-6 pl-8 border-l-2 border-slate-100 space-y-8">
+                      {dayData.stops.map((stop, sIndex) => (
+                        <div key={sIndex} className="relative">
+                          <div className="absolute -left-[37px] top-1.5 w-4 h-4 bg-white border-2 border-primary-400 rounded-full"></div>
+                          <span className="text-xs font-bold text-primary-600 bg-primary-50 px-2 py-1 rounded inline-block mb-2">{stop.time}</span>
+                          <h5 className="font-bold text-slate-800 text-lg mb-1">{stop.title}</h5>
+                          <p className="text-slate-500">{stop.desc}</p>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 ))}
-              </div>
-
-              <div className="flex flex-col md:flex-row items-center justify-between bg-slate-50 rounded-2xl p-6 border border-slate-100">
-                <div className="mb-4 md:mb-0">
-                  <p className="text-slate-500 text-sm">Estimated Total Cost</p>
-                  <p className="text-2xl font-bold text-slate-900">{getExpandedTrip().estCost}</p>
-                </div>
-                <button
-                  onClick={() => handleUseTemplate(getExpandedTrip())}
-                  className="px-8 py-3 bg-[#378ADD] hover:bg-blue-600 text-white font-semibold rounded-xl shadow-md transition-all transform hover:scale-[1.02] flex items-center gap-2"
-                >
-                  <FaMapMarkerAlt /> Use this template
-                </button>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </section>
   );
 };
 
