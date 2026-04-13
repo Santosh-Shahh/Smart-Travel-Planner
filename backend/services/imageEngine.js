@@ -18,23 +18,38 @@ const ACTION_PREFIXES = [
 
 /**
  * Extract the most meaningful place name from an AI-generated activity title.
- * "Narita Express to Shinjuku" → searches "Narita Express" then "Shinjuku"
- * "Lunch at Tsukiji Market"   → "Tsukiji Market"
- * "Visit Golden Pavilion"     → "Golden Pavilion"
+ * 
+ * Examples:
+ *   "Visit Laxman Jhula"            → "Laxman Jhula"
+ *   "Evening Ganga Aarti at Triveni Ghat" → "Triveni Ghat"
+ *   "White Water Rafting on Ganges" → "Rafting Ganges"
+ *   "Narita Express to Shinjuku"    → "Shinjuku Narita Express"
+ *   "Lunch at Tsukiji Market"       → "Tsukiji Market"
  */
 const extractPlaceName = (activity) => {
   if (!activity) return '';
   let name = activity.trim();
+
+  // Handle "X at Y" → extract Y (the venue/place after "at")
+  const atMatch = name.match(/\bat\s+([A-Z][\w\s,'-]{2,})$/i);
+  if (atMatch) return atMatch[1].trim();
+
+  // Handle "X on Y" (e.g. "Rafting on Ganges") → keep both
+  const onMatch = name.match(/^(.+?)\s+on\s+(.+)$/i);
+  if (onMatch) {
+    // e.g. "White Water Rafting" + "Ganges" → "Rafting Ganges"
+    const verb = onMatch[1].replace(/^(white water|black water)\s+/i, '').trim();
+    return `${verb} ${onMatch[2].trim()}`;
+  }
 
   // Strip leading action verbs
   for (const pattern of ACTION_PREFIXES) {
     name = name.replace(pattern, '');
   }
 
-  // For "X to Y" transport patterns, return both so we can search either
+  // Handle "X to Y" transport patterns → prefer destination Y
   const toMatch = name.match(/^(.+?)\s+to\s+(.+)$/i);
   if (toMatch) {
-    // Prefer the destination (Y) — e.g. "Shinjuku" is more searchable than "Narita Express to Shinjuku"
     return `${toMatch[2].trim()} ${toMatch[1].trim()}`;
   }
 
@@ -119,9 +134,26 @@ const getCategoryFallback = (category, activity, index = 0) => {
 const wikiCache = new Map();
 
 /**
+ * Score how relevant a Wikipedia article title is to our search query.
+ * Higher = better match. Used to pick the best result, not just the first.
+ */
+const scoreRelevance = (title, query) => {
+  const titleWords = title.toLowerCase().split(/\s+/);
+  const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  let score = 0;
+  for (const qw of queryWords) {
+    for (const tw of titleWords) {
+      if (tw === qw) score += 3;                         // exact word match
+      else if (tw.includes(qw) || qw.includes(tw)) score += 1; // partial match
+    }
+  }
+  return score;
+};
+
+/**
  * Fetch a real, authentic photo of a place from Wikipedia.
- * Tries the primary query first; falls back to secondaryQuery if no image is found.
- * Filters out flags, coats of arms, and SVG icons — only real photographs.
+ * Picks the MOST RELEVANT article (not just the first one).
+ * Filters out flags, coats of arms, SVG icons.
  *
  * @param {string} primaryQuery
  * @param {string} [secondaryQuery]
@@ -153,36 +185,47 @@ const searchWikipediaImage = async (primaryQuery, secondaryQuery = null) => {
           format: 'json',
         },
         headers: {
-          'User-Agent': 'SmartTravelPlanner/1.0 (https://smart-travel-planner-app.vercel.app; contact@smarttravel.app) Node.js/axios',
+          'User-Agent': 'SmartTravelPlanner/1.0 (https://smart-travel-planner-app.vercel.app) Node.js/axios',
         },
         timeout: 5000,
       });
 
-      const pages = res.data?.query?.pages;
-      if (pages) {
-        for (const page of Object.values(pages)) {
-          const url = page?.thumbnail?.source;
-          if (
-            url &&
-            !url.endsWith('.svg') &&
-            !url.includes('Flag_of') &&
-            !url.includes('Coat_of_arms') &&
-            !url.includes('Logo') &&
-            !url.includes('logo') &&
-            !url.includes('icon') &&
-            !url.includes('Icon')
-          ) {
-            wikiCache.set(cacheKey, url);
-            return url;
-          }
-        }
+      const pages = Object.values(res.data?.query?.pages || {});
+
+      // Filter to only pages with valid real photos
+      const validPages = pages.filter(p => {
+        const url = p?.thumbnail?.source;
+        return url &&
+          !url.endsWith('.svg') &&
+          !url.includes('Flag_of') &&
+          !url.includes('Coat_of_arms') &&
+          !url.includes('Logo') &&
+          !url.includes('logo') &&
+          !url.includes('icon') &&
+          !url.includes('Icon') &&
+          !url.includes('map') &&
+          !url.includes('Map');
+      });
+
+      if (validPages.length === 0) {
+        wikiCache.set(cacheKey, null);
+        continue;
       }
-      wikiCache.set(cacheKey, null);
+
+      // Sort by relevance score — pick most relevant article, not just first result
+      validPages.sort((a, b) => scoreRelevance(b.title, query) - scoreRelevance(a.title, query));
+
+      const best = validPages[0];
+      const url = best.thumbnail.source;
+      wikiCache.set(cacheKey, url);
+      return url;
+
     } catch (err) {
       console.error(`Wikipedia search failed for "${query}":`, err.message);
     }
   }
 
+  wikiCache.set((secondaryQuery || primaryQuery).toLowerCase(), null);
   return null;
 };
 
@@ -233,31 +276,36 @@ const getActivityImage = async ({
   const usedSet = getUsedSet(tripId);
   const cat = (category || 'attraction').toLowerCase();
 
-  // ── Build Wikipedia search queries ───────────────────────────────────────
-  let primaryWikiQuery;
-  let fallbackWikiQuery;
+  // Wikipedia only works well for named landmarks — not generic food/hotel/transport
+  const wikiEligible = ['attraction', 'nature', 'landmark'].includes(cat);
 
-  if (location) {
-    primaryWikiQuery = location;
-    fallbackWikiQuery = city ? `${location} ${city}` : null;
-  } else if (cat === 'transport') {
-    const placeName = extractPlaceName(activity);
-    const modeKey = (travelFromPrevious?.mode || 'train').toLowerCase();
-    const modeTerms = TRANSPORT_WIKI_TERMS[modeKey] || 'railway station';
-    primaryWikiQuery = placeName;
-    fallbackWikiQuery = city ? `${modeTerms} ${city}` : modeTerms;
-  } else {
-    const placeName = extractPlaceName(activity);
-    primaryWikiQuery = placeName;
-    fallbackWikiQuery = city ? `${placeName} ${city}` : null;
-  }
+  if (wikiEligible) {
+    // ── Build Wikipedia search queries ─────────────────────────────────────
+    let primaryWikiQuery;
+    let fallbackWikiQuery;
 
-  // ── Source 1: Wikipedia (real place photos, completely free) ─────────────
-  const wikiUrl = await searchWikipediaImage(primaryWikiQuery, fallbackWikiQuery);
-  if (wikiUrl) {
-    const wikiId = `wiki_${simpleHash(wikiUrl)}`;
-    usedSet.add(wikiId);
-    return { imageUrl: wikiUrl, source: 'wikipedia' };
+    if (location) {
+      primaryWikiQuery = location;
+      fallbackWikiQuery = city ? `${location} ${city}` : null;
+    } else if (cat === 'transport') {
+      const placeName = extractPlaceName(activity);
+      const modeKey = (travelFromPrevious?.mode || 'train').toLowerCase();
+      const modeTerms = TRANSPORT_WIKI_TERMS[modeKey] || 'railway station';
+      primaryWikiQuery = placeName;
+      fallbackWikiQuery = city ? `${modeTerms} ${city}` : modeTerms;
+    } else {
+      const placeName = extractPlaceName(activity);
+      primaryWikiQuery = placeName;
+      fallbackWikiQuery = city ? `${placeName} ${city}` : null;
+    }
+
+    // ── Source 1: Wikipedia (real place photos, completely free) ───────────
+    const wikiUrl = await searchWikipediaImage(primaryWikiQuery, fallbackWikiQuery);
+    if (wikiUrl) {
+      const wikiId = `wiki_${simpleHash(wikiUrl)}`;
+      usedSet.add(wikiId);
+      return { imageUrl: wikiUrl, source: 'wikipedia' };
+    }
   }
 
   // ── Source 2: Google Places (only if billing-enabled API key present) ────
