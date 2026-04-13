@@ -35,7 +35,7 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/trips', tripRoutes);
 
 const { getPlaceImagePhotoURL, autocompletePlaces } = require('./services/places');
-const { getActivityImage } = require('./services/imageEngine');
+const { getActivityImage } = require('./services/imageService');
 
 // ─── New: Category-aware activity image endpoint ────────────────────────────
 app.get('/api/activity-image', async (req, res) => {
