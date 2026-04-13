@@ -210,7 +210,30 @@ const getBestTravelImage = async (activity, city, country, category, tripId) => 
   if (skylineUrl) return skylineUrl;
   
   // Failsafe 2: Absolutely hardcoded high-quality stock if APIs are totally down or unconfigured
-  return 'https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'; 
+  const genericFallbacks = [
+    'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+    'https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=800&q=80'
+  ];
+
+  for (const fallback of genericFallbacks) {
+    const id = `fallback_${fallback}`;
+    if (!usedImages.has(id)) {
+      usedImages.add(id);
+      return fallback;
+    }
+  }
+
+  // If ALL 11 fallbacks are used, just default to the first one again
+  return genericFallbacks[0];
 };
 
 // Alias specifically for compatibility with existing imports depending on name
