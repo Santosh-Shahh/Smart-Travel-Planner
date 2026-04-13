@@ -50,6 +50,28 @@ const TripForm = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Listen for the fillTripTemplate custom event
+  useEffect(() => {
+    const handleFillTemplate = (e) => {
+      const { destination, days, travelType, budget } = e.detail;
+      if (destination) setDestination(destination);
+      if (days) setDays(days.toString());
+      if (travelType) setTravelType(travelType);
+      if (budget) setBudget(budget);
+      
+      // Auto-focus logic: we smooth scroll to the form so the user sees it filled.
+      if (formRef.current) {
+        formRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      
+      // Flash a quick toast message to confirm
+      toast.success('Template loaded successfully!');
+    };
+    
+    window.addEventListener('fillTripTemplate', handleFillTemplate);
+    return () => window.removeEventListener('fillTripTemplate', handleFillTemplate);
+  }, []);
+
   // Central debounced fetcher
   useEffect(() => {
     if (!activeField) {

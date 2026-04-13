@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import TripForm from '../components/TripForm';
+import SampleTrips from '../components/SampleTrips';
 import { FaGlobeAmericas, FaMagic, FaCoins } from 'react-icons/fa';
 
 const Home = () => {
@@ -28,9 +29,11 @@ const Home = () => {
           </p>
         </motion.div>
 
-        <div className="mb-32">
+        <div className="mb-20">
           <TripForm />
         </div>
+
+        <SampleTrips />
 
         {/* Feature Highlights */}
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
