@@ -83,7 +83,7 @@ const AnimatedLoader = () => {
       </div>
 
       {/* Subtitle */}
-      <p className="text-sm text-slate-400 mt-6">This usually takes 10-15 seconds</p>
+      <p className="text-sm text-slate-400 mt-6">This usually takes 2-4 seconds</p>
     </div>
   );
 };
