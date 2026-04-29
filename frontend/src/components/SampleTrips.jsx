@@ -12,7 +12,7 @@ const sampleTrips = [
     budget: 'Luxury',
     cost: '$1,200',
     color: 'from-orange-400 to-red-600',
-    coverImage: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&q=80&w=800',
+    coverImage: '/images/kathmandu.png',
     itinerary: [
       {
         day: 1,
@@ -70,7 +70,7 @@ const sampleTrips = [
     budget: 'Budget',
     cost: '$150',
     color: 'from-emerald-400 to-teal-600',
-    coverImage: 'https://images.unsplash.com/photo-1626621341517-bbf3e99c0b2c?auto=format&fit=crop&q=80&w=800',
+    coverImage: '/images/manali.png',
     itinerary: [
       {
         day: 1,
@@ -110,7 +110,7 @@ const sampleTrips = [
     budget: 'Moderate',
     cost: '$850',
     color: 'from-fuchsia-500 to-purple-700',
-    coverImage: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80&w=800',
+    coverImage: '/images/tokyo.png',
     itinerary: [
       {
         day: 1,
@@ -202,9 +202,9 @@ const SampleTrips = () => {
               onClick={() => handleToggle(trip.id)}
               className={`bg-white rounded-2xl border ${isExpanded ? 'border-primary-500 ring-2 ring-primary-100 shadow-xl' : 'border-slate-200 shadow-sm'} overflow-hidden cursor-pointer transition-all hover:shadow-md h-full flex flex-col`}
             >
-              {/* Cover Image/Gradient area */}
-              <div className={`h-32 bg-gradient-to-r ${trip.color} relative overflow-hidden`}>
-                <img src={trip.coverImage} alt={trip.city} className="w-full h-full object-cover opacity-50 mix-blend-overlay" />
+              {/* Cover Image area */}
+              <div className="h-32 relative overflow-hidden">
+                <img src={trip.coverImage} alt={trip.city} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
                   <h3 className="text-2xl font-bold text-white flex items-center">
                     <FaMapMarkerAlt className="mr-2 text-white/80 text-lg" />
