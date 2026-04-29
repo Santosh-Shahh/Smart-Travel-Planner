@@ -21,8 +21,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 
 // ─── Rate Limiters ──────────────────────────────────────────────────────────
-const generateLimiter = rateLimit({ windowMs: 60 * 1000, max: 5, message: { message: 'Too many requests. Please wait a minute before generating another trip.' } });
-const chatLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: { message: 'Too many chat messages. Please slow down.' } });
+
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 15, message: { message: 'Too many auth attempts. Please try again later.' } });
 
 // ─── Health check ────────────────────────────────────────────────────────────

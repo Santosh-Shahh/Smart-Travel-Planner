@@ -213,7 +213,7 @@ router.post('/chat', chatLimiter, async (req, res) => {
     res.json({ reply });
   } catch (error) {
     console.error('Chat error:', error.message);
-    res.status(500).json({ message: 'Chat service unavailable' });
+    res.status(500).json({ message: 'Chat service unavailable', debug: error.message });
   }
 });
 

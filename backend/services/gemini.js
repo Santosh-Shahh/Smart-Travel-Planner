@@ -181,7 +181,7 @@ const chatWithAssistant = async (message, history = []) => {
     return response.text();
   } catch (error) {
     console.error("Gemini Chat API Error:", error);
-    return "I'm having trouble connecting right now. Please try again soon!";
+    return `DEBUG: Gemini Chat API Error: ${error.message || error}`;
   }
 };
 
