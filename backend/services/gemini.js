@@ -161,10 +161,30 @@ ${from ? 'Ensure Day 1 accurately reflects arrival and travel logistics from the
  * Chat with the AI travel assistant via Gemini.
  */
 const chatWithAssistant = async (message, history = []) => {
-  const formatHistory = history.map(msg => ({
-    role: msg.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: msg.content }]
-  }));
+  // Gemini requires history to strictly start with 'user' and alternate 'user' -> 'model'
+  let validHistory = [];
+  for (const msg of history) {
+    // Ignore default greetings and error messages from the frontend
+    if (msg.content.includes("Hi there! I am your AI travel guide") || 
+        msg.content.includes("I'm having trouble connecting right now")) {
+      continue;
+    }
+    
+    const role = msg.role === 'assistant' ? 'model' : 'user';
+    
+    // History must start with a user message
+    if (validHistory.length === 0 && role === 'model') {
+      continue;
+    }
+    
+    // Ensure strict alternation
+    if (validHistory.length > 0 && validHistory[validHistory.length - 1].role === role) {
+      // Overwrite the previous consecutive message of the same role
+      validHistory[validHistory.length - 1].parts[0].text = msg.content;
+    } else {
+      validHistory.push({ role, parts: [{ text: msg.content }] });
+    }
+  }
 
   try {
     // We instantiate a separate model context for chat if we wish, or use the global one
@@ -173,7 +193,7 @@ const chatWithAssistant = async (message, history = []) => {
       systemInstruction: "You are a friendly and knowledgeable travel assistant. Help users with travel-related questions, provide recommendations, tips, and advice. Keep responses concise, helpful, and engaging."
     });
     const chatSession = chatModel.startChat({
-      history: formatHistory
+      history: validHistory
     });
 
     const result = await chatSession.sendMessage(message);
