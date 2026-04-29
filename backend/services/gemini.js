@@ -168,10 +168,12 @@ const chatWithAssistant = async (message, history = []) => {
 
   try {
     // We instantiate a separate model context for chat if we wish, or use the global one
-    const chatModel = new GoogleGenerativeAI(process.env.GEMINI_API_KEY).getGenerativeModel({ model: "gemini-flash-latest" });
-    const chatSession = chatModel.startChat({
-      history: formatHistory,
+    const chatModel = new GoogleGenerativeAI(process.env.GEMINI_API_KEY).getGenerativeModel({ 
+      model: "gemini-flash-latest",
       systemInstruction: "You are a friendly and knowledgeable travel assistant. Help users with travel-related questions, provide recommendations, tips, and advice. Keep responses concise, helpful, and engaging."
+    });
+    const chatSession = chatModel.startChat({
+      history: formatHistory
     });
 
     const result = await chatSession.sendMessage(message);
