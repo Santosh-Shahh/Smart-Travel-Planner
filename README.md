@@ -234,7 +234,7 @@ npm run dev
 
 ### 4. Open in Browser
 
-Navigate to **http://localhost:5173** and start planning your trip!
+Navigate to `http://localhost:5173` and start planning your trip!
 
 ---
 
