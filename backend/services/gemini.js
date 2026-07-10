@@ -159,12 +159,47 @@ ${from ? 'Ensure Day 1 accurately reflects arrival and travel logistics from the
  * Chat with the AI travel assistant via Gemini.
  */
 const chatWithAssistant = async (message, history = []) => {
+  const systemMessage = "You are a friendly and knowledgeable travel assistant. Help users with travel-related questions, provide recommendations, tips, and advice. Keep responses concise, helpful, and engaging.";
+
+  // Try Groq first for faster response time
+  if (process.env.GROQ_API_KEY) {
+    try {
+      const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+      
+      // Convert history to Groq/OpenAI format
+      const groqMessages = [
+        { role: "system", content: systemMessage }
+      ];
+      for (const msg of history) {
+        if (msg.content.includes("Hi there! I am your AI travel guide") || 
+            msg.content.includes("I'm having trouble connecting right now") ||
+            msg.content.includes("I'm having trouble connecting to the network")) {
+          continue;
+        }
+        groqMessages.push({ role: msg.role === 'assistant' ? 'assistant' : 'user', content: msg.content });
+      }
+      groqMessages.push({ role: 'user', content: message });
+
+      const groqResponse = await groq.chat.completions.create({
+        messages: groqMessages,
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.7,
+      });
+
+      return groqResponse.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
+    } catch (groqError) {
+      console.warn("Groq Chat API Error, attempting Gemini fallback:", groqError.message);
+    }
+  }
+
+  // Fallback to Gemini
   // Gemini requires history to strictly start with 'user' and alternate 'user' -> 'model'
   let validHistory = [];
   for (const msg of history) {
     // Ignore default greetings and error messages from the frontend
     if (msg.content.includes("Hi there! I am your AI travel guide") || 
-        msg.content.includes("I'm having trouble connecting right now")) {
+        msg.content.includes("I'm having trouble connecting right now") ||
+        msg.content.includes("I'm having trouble connecting to the network")) {
       continue;
     }
     
@@ -185,10 +220,9 @@ const chatWithAssistant = async (message, history = []) => {
   }
 
   try {
-    // We instantiate a separate model context for chat if we wish, or use the global one
     const chatModel = new GoogleGenerativeAI(process.env.GEMINI_API_KEY).getGenerativeModel({ 
       model: "gemini-flash-latest",
-      systemInstruction: "You are a friendly and knowledgeable travel assistant. Help users with travel-related questions, provide recommendations, tips, and advice. Keep responses concise, helpful, and engaging."
+      systemInstruction: systemMessage
     });
     const chatSession = chatModel.startChat({
       history: validHistory
@@ -197,9 +231,9 @@ const chatWithAssistant = async (message, history = []) => {
     const result = await chatSession.sendMessage(message);
     const response = await result.response;
     return response.text();
-  } catch (error) {
-    console.error("Gemini Chat API Error:", error);
-    return `DEBUG: Gemini Chat API Error: ${error.message || error}`;
+  } catch (geminiError) {
+    console.error("Gemini Chat API Error:", geminiError.message);
+    throw new Error("All AI chat providers failed. Please check your API keys.");
   }
 };
 
