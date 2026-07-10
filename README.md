@@ -1,29 +1,19 @@
 <div align="center">
 
 # ✈️ SmartTravel
-**AI-Powered Travel Itinerary Generator**
+
+### AI-Powered Travel Itinerary Generator
 
 Generate personalized, day-by-day travel plans in seconds — complete with budget breakdowns, live weather, interactive maps, and one-click PDF exports.
 
 🌐 **Live Demo →** [smart-travel-planner-app.vercel.app](https://smart-travel-planner-app.vercel.app)
 
-[![React 19](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white)](https://react.dev/)
-[![Vite 8](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
-
-</div>
-
----
-
-## 📸 Screenshots
-
-<div align="center">
-
-| Trip Planning Form | Day-by-Day Itinerary | Budget Breakdown |
-|:---:|:---:|:---:|
-| ![Home](screenshots/home.png) | ![Itinerary](screenshots/itinerary.png) | ![Budget](screenshots/budget.png) |
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
+[![Vite 8](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev/)
+[![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Node.js](https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
 </div>
 
@@ -31,37 +21,35 @@ Generate personalized, day-by-day travel plans in seconds — complete with budg
 
 ## ✨ Key Features
 
-- **🤖 AI-Generated Itineraries:** Powered by **Groq LLaMA 3.3 70B** (primary) and **Google Gemini 1.5 Flash** (fallback) for lightning-fast, structured JSON travel plans.
-- **💬 Travel Assistant AI:** Persistent chat widget using Groq/Gemini for instant destination advice and travel tips.
-- **🗺️ Interactive Maps & Routing:** Google Places Autocomplete and Maps integration for precise origin-to-destination planning and geographic context.
-- **📊 Budget Analytics:** Recharts-powered interactive charts visualizing cost allocation across food, transport, stays, and activities.
-- **🌤️ Live Weather Integration:** Real-time 5-day forecasts via OpenWeatherMap to help plan activities optimally.
-- **🖼️ Smart Image Engine:** Multi-provider fallback cascade (Pexels, Unsplash, Pixabay, Google Places) to intelligently fetch relevant activity photos.
-- **🔐 Secure Authentication:** JWT-based session management and one-click Google OAuth 2.0 integration.
-- **📁 Save, Share & Export:** Manage saved trips in a dashboard, generate shareable public links, or export itineraries directly to PDF.
+1. **🤖 AI Itinerary Generation:** Dual-LLM architecture (Groq LLaMA 3.3 primary, Gemini 1.5 fallback) generates structured, day-by-day itineraries tailored to budget, travel type, and interests.
+2. **💬 Contextual AI Chatbot:** Floating travel assistant for instant destination Q&A and personalized recommendations.
+3. **🗺️ Interactive Maps & Routing:** Google Places autocomplete and embedded maps with geocoded destination markers.
+4. **🌤️ Live Weather Integration:** Real-time 5-day forecasts via OpenWeatherMap.
+5. **📊 Budget Analytics:** Visual breakdowns (Recharts) for accommodation, food, transport, and activities.
+6. **🖼️ Smart Image Engine:** Context-aware activity photos fetched sequentially from Pexels, Unsplash, and Pixabay.
+7. **🔐 Secure Authentication:** JWT-based sessions and Google OAuth 2.0 integration.
+8. **📤 Trip Management:** Save, duplicate, share (via public links), and export itineraries to PDF.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend:** React 19, Vite, Tailwind CSS v4, Framer Motion, Recharts, `@react-google-maps/api`.
-- **Backend:** Node.js, Express.js, Mongoose, Groq SDK, `@google/generative-ai`, JWT, Helmet.
-- **Infrastructure:** MongoDB Atlas, Vercel (Frontend), Render (Backend).
+- **Frontend:** React 19, Vite 8, Tailwind CSS v4, React Router v7, Framer Motion, Recharts, html2pdf.js
+- **Backend:** Node.js, Express.js, Mongoose, JWT, Helmet, express-rate-limit
+- **APIs:** Groq SDK, Google Generative AI, Google Maps/Places, OpenWeatherMap, Pexels/Unsplash/Pixabay
+- **Infrastructure:** MongoDB Atlas, Vercel (Frontend), Render (Backend)
 
 ---
 
-## 🏗️ Architecture Flow
+## 🏗️ Architecture
 
-```mermaid
-graph LR
-    A[User Input] --> B(Express Backend)
-    B -->|Parallel API Calls| C{Services}
-    C -->|AI| D[Groq / Gemini]
-    C -->|Location| E[Google Maps]
-    C -->|Images| F[Pexels/Unsplash]
-    C -->|Weather| G[OpenWeatherMap]
-    C --> H((MongoDB))
-    C --> I[React Frontend]
+```text
+User Input ──> [React Frontend] ──(Axios)──> [Express Backend] ──> [MongoDB]
+                    │                                │
+             (Render / PDF)                ┌─────────┴─────────┐
+                                           │                   │
+                                    [AI Services]      [Data APIs]
+                                    (Groq, Gemini)     (Maps, Weather, Images)
 ```
 
 ---
@@ -69,62 +57,72 @@ graph LR
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js v18+ and a MongoDB Atlas cluster.
-- API Keys: Groq (Primary AI), Google AI Studio (Fallback AI), Google Cloud (Maps/Places/OAuth), OpenWeatherMap.
+- **Node.js** v18+ & **MongoDB Atlas** cluster
+- **API Keys:** Groq, Google AI Studio, Google Cloud (Maps/Places), OpenWeatherMap. *(Optional: Pexels, Unsplash)*.
 
-### 1. Setup Backend
+### 1. Clone & Install
 ```bash
 git clone https://github.com/Santosh-Shahh/Smart-Travel-Planner.git
-cd Smart-Travel-Planner/backend
+cd Smart-Travel-Planner
+```
+
+### 2. Backend Setup
+```bash
+cd backend
 npm install
 cp .env.example .env
-```
-*Configure `backend/.env` with your MongoDB URI and API keys.*
-```bash
+# Edit .env with your MongoDB URI, JWT_SECRET, and API keys
 npm run dev
 ```
 
-### 2. Setup Frontend
+### 3. Frontend Setup
 ```bash
-cd ../frontend
+cd frontend
 npm install
 cp .env.example .env
-```
-*Configure `frontend/.env` with your API URL (`http://localhost:5001/api`) and Google Client ID.*
-```bash
+# Edit .env with VITE_API_URL=http://localhost:5001/api and VITE_GOOGLE_CLIENT_ID
 npm run dev
 ```
-Navigate to `http://localhost:5173` to view the application.
+
+Navigate to `http://localhost:5173` to view the app!
 
 ---
 
 ## 📁 Project Structure (Simplified)
-```
+
+```text
 Smart-Travel-Planner/
 ├── backend/
-│   ├── models/           # User & Trip schemas
-│   ├── routes/           # Auth & Trip REST endpoints
-│   └── services/         # AI, Maps, Places, Image, Weather integration
+│   ├── models/        # Mongoose schemas (User, Trip)
+│   ├── routes/        # API endpoints (Auth, Trips)
+│   ├── services/      # External API integrations (AI, Weather, Maps, Images)
+│   └── server.js      # Express app entry point
 └── frontend/
-    ├── src/
-    │   ├── components/   # UI elements (Forms, Maps, Charts, Chatbot)
-    │   ├── context/      # JWT & Google OAuth state management
-    │   └── pages/        # Dashboard, Results, Home, Auth views
-    └── vercel.json       # SPA deployment config
+    └── src/
+        ├── components/# Reusable UI elements (TripForm, ChatBot, Maps)
+        ├── context/   # React Context (Auth)
+        ├── pages/     # Main views (Home, Results, Dashboard)
+        └── App.jsx    # Client-side routing
 ```
+
+---
+
+## 🔄 How It Works
+
+1. **Input:** User provides destination, duration, budget, and preferences.
+2. **Parallel Processing:** Backend concurrently calls AI (Groq/Gemini), Weather, and Maps APIs.
+3. **Rendering:** Frontend displays the generated itinerary with maps, charts, and contextual images.
+4. **Persistence:** Authenticated users can save, share, or export trips as PDFs.
 
 ---
 
 ## 🔮 Future Improvements
-- Flight & hotel booking API integration (Skyscanner/Booking.com).
-- Collaborative multi-user trip planning.
-- Offline support via PWA.
+- Flight & hotel booking integration.
+- Real-time pricing & collaborative trip planning.
+- Offline access via PWA.
 
 ## 🤝 Contributing
-Fork the repo, create a feature branch (`git checkout -b feature/idea`), commit changes, and open a Pull Request.
+Contributions are welcome! Fork the repository, create a feature branch, and submit a pull request.
 
----
-<div align="center">
-<b>Built by <a href="https://github.com/Santosh-Shahh">Santosh Shah</a></b><br>
-Licensed under the MIT License
-</div>
+## 📜 License
+[MIT License](LICENSE). Built with ❤️ by [Santosh Shah](https://github.com/Santosh-Shahh).
