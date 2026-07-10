@@ -17,30 +17,9 @@ Generate personalized, day-by-day travel plans in seconds — complete with budg
 
 </div>
 
----
-
-## 📸 Screenshots
-
-<div align="center">
-
-| Home — Trip Planning Form | Day-by-Day Itinerary |
-|:---:|:---:|
-| ![Home](screenshots/home.png) | ![Itinerary](screenshots/itinerary.png) |
-
-| Budget Breakdown Charts | Saved Trips Dashboard |
-|:---:|:---:|
-| ![Budget](screenshots/budget.png) | ![Dashboard](screenshots/dashboard.png) |
-
-<details>
-<summary><strong>View Results Page</strong></summary>
-
-![Results](screenshots/results.png)
-
-</details>
-
-</div>
 
 ---
+
 
 ## ✨ Features
 
