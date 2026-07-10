@@ -146,7 +146,7 @@ const Home = () => {
           className="text-center max-w-3xl mx-auto mb-16"
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 text-primary-700 font-medium text-sm mb-6 border border-primary-100">
-            <FaMagic className="mr-1" /> AI-Powered Travel Planning
+            AI-Powered Travel Planning
           </div>
           <style>{`
             @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
